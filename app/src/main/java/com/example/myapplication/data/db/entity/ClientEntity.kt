@@ -7,11 +7,11 @@ import androidx.room.PrimaryKey
 data class ClientEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    val name: String,
-    val rut: String,
-    val address: String,
-    val city: String,
-    val commune: String,
-    val phone: String,
-    val email: String
+    val name: String = "",
+    val rut: String = "",
+    val address: String = "",
+    val city: String = "",
+    val commune: String = "",
+    val phone: String = "",
+    val email: String = ""
 )

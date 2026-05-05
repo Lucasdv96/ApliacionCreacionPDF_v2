@@ -7,14 +7,14 @@ import androidx.room.PrimaryKey
 data class SettingsEntity(
     @PrimaryKey
     val id: Int = 1,
-    val companyName: String,
-    val companyRut: String,
-    val companyAddress: String,
-    val companyPhone: String,
-    val companyEmail: String,
-    val companyCity: String,
-    val logoPath: String,
-    val primaryColor: String,
-    val secondaryColor: String,
-    val termsConditions: String
+    val companyName: String = "",
+    val companyRut: String = "",
+    val companyAddress: String = "",
+    val companyPhone: String = "",
+    val companyEmail: String = "",
+    val companyCity: String = "",
+    val logoPath: String = "",
+    val primaryColor: String = "",
+    val secondaryColor: String = "",
+    val termsConditions: String = ""
 )

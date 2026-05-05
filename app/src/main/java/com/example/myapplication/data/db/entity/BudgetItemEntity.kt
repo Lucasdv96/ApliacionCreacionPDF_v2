@@ -18,12 +18,12 @@ import androidx.room.PrimaryKey
 data class BudgetItemEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    val budgetId: Int,
-    val type: String,
-    val description: String,
-    val specifications: String,
-    val quantity: Int,
-    val unitPrice: Double,
-    val laborCost: Double,
-    val notes: String
+    val budgetId: Int = 0,
+    val type: String = "",
+    val description: String = "",
+    val specifications: String = "",
+    val quantity: Int = 0,
+    val unitPrice: Double = 0.0,
+    val laborCost: Double = 0.0,
+    val notes: String = ""
 )
