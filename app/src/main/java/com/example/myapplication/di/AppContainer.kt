@@ -19,7 +19,9 @@ class AppDataContainer(private val context: Context) : AppContainer {
             context,
             AppDatabase::class.java,
             "budget_app_database"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     override val budgetRepository: BudgetRepository by lazy {
