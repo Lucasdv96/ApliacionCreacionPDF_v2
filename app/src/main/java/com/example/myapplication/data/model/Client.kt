@@ -6,10 +6,10 @@ import kotlinx.serialization.Serializable
 data class Client(
     val id: Int = 0,
     val name: String = "",
-    val rut: String = "",
+    val cuit: String = "",
     val address: String = "",
     val city: String = "",
-    val commune: String = "",
+    val province: String = "",
     val phone: String = "",
     val email: String = ""
 )

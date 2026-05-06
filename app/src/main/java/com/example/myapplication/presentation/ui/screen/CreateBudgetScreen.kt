@@ -80,9 +80,9 @@ fun CreateBudgetScreen(
             )
 
             FormTextField(
-                label = "RUT",
-                value = uiState.clientRut,
-                onValueChange = viewModel::updateClientRut,
+                label = "CUIT",
+                value = uiState.clientCuit,
+                onValueChange = viewModel::updateClientCuit,
                 enabled = !uiState.isSaving
             )
 
@@ -102,9 +102,9 @@ fun CreateBudgetScreen(
             )
 
             FormTextField(
-                label = "Comuna",
-                value = uiState.clientCommune,
-                onValueChange = viewModel::updateClientCommune,
+                label = "Provincia",
+                value = uiState.clientProvince,
+                onValueChange = viewModel::updateClientProvince,
                 enabled = !uiState.isSaving
             )
 

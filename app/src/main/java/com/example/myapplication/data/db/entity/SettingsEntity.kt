@@ -8,7 +8,7 @@ data class SettingsEntity(
     @PrimaryKey
     val id: Int = 1,
     val companyName: String = "",
-    val companyRut: String = "",
+    val companyCuit: String = "",
     val companyAddress: String = "",
     val companyPhone: String = "",
     val companyEmail: String = "",

@@ -16,7 +16,7 @@ class SettingsRepository(private val settingsDao: SettingsDao) {
             val defaultSettings = SettingsEntity(
                 id = 1,
                 companyName = "MB Cerramientos",
-                companyRut = "",
+                companyCuit = "",
                 companyAddress = "",
                 companyPhone = "",
                 companyEmail = "",

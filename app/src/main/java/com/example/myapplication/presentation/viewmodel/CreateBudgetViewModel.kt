@@ -15,10 +15,10 @@ import kotlinx.coroutines.launch
 data class CreateBudgetUiState(
     // Client data
     val clientName: String = "",
-    val clientRut: String = "",
+    val clientCuit: String = "",
     val clientAddress: String = "",
     val clientCity: String = "",
-    val clientCommune: String = "",
+    val clientProvince: String = "",
     val clientPhone: String = "",
     val clientEmail: String = "",
 
@@ -45,8 +45,8 @@ class CreateBudgetViewModel(
         _uiState.value = _uiState.value.copy(clientName = name)
     }
 
-    fun updateClientRut(rut: String) {
-        _uiState.value = _uiState.value.copy(clientRut = rut)
+    fun updateClientCuit(cuit: String) {
+        _uiState.value = _uiState.value.copy(clientCuit = cuit)
     }
 
     fun updateClientAddress(address: String) {
@@ -57,8 +57,8 @@ class CreateBudgetViewModel(
         _uiState.value = _uiState.value.copy(clientCity = city)
     }
 
-    fun updateClientCommune(commune: String) {
-        _uiState.value = _uiState.value.copy(clientCommune = commune)
+    fun updateClientProvince(province: String) {
+        _uiState.value = _uiState.value.copy(clientProvince = province)
     }
 
     fun updateClientPhone(phone: String) {
@@ -113,10 +113,10 @@ class CreateBudgetViewModel(
                 // Crear cliente
                 val client = ClientEntity(
                     name = currentState.clientName,
-                    rut = currentState.clientRut,
+                    cuit = currentState.clientCuit,
                     address = currentState.clientAddress,
                     city = currentState.clientCity,
-                    commune = currentState.clientCommune,
+                    province = currentState.clientProvince,
                     phone = currentState.clientPhone,
                     email = currentState.clientEmail
                 )
