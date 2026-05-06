@@ -134,11 +134,11 @@ fun CreateBudgetScreen(
             )
 
             FormTextField(
-                label = "Costo de Mano de Obra por Item",
-                value = if (uiState.laborCostPerItem == 0.0) "" else uiState.laborCostPerItem.toString(),
+                label = "Mano de Obra",
+                value = if (uiState.laborCost == 0.0) "" else uiState.laborCost.toString(),
                 onValueChange = { value ->
                     val doubleValue = value.toDoubleOrNull() ?: 0.0
-                    viewModel.updateLaborCostPerItem(doubleValue)
+                    viewModel.updateLaborCost(doubleValue)
                 },
                 enabled = !uiState.isSaving
             )

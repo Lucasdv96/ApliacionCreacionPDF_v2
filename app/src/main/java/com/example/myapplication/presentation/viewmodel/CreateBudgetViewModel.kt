@@ -24,7 +24,7 @@ data class CreateBudgetUiState(
 
     // Budget data
     val projectName: String = "",
-    val laborCostPerItem: Double = 0.0,
+    val laborCost: Double = 0.0,
 
     // UI state
     val isSaving: Boolean = false,
@@ -73,8 +73,8 @@ class CreateBudgetViewModel(
         _uiState.value = _uiState.value.copy(projectName = project)
     }
 
-    fun updateLaborCostPerItem(cost: Double) {
-        _uiState.value = _uiState.value.copy(laborCostPerItem = cost)
+    fun updateLaborCost(cost: Double) {
+        _uiState.value = _uiState.value.copy(laborCost = cost)
     }
 
     private fun validateForm(): Boolean {
@@ -128,7 +128,7 @@ class CreateBudgetViewModel(
                     createdDate = System.currentTimeMillis(),
                     modifiedDate = System.currentTimeMillis(),
                     project = currentState.projectName,
-                    laborCostPerItem = currentState.laborCostPerItem,
+                    laborCostPerItem = currentState.laborCost,
                     notes = "",
                     status = "DRAFT"
                 )
