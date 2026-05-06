@@ -16,15 +16,22 @@ import kotlinx.coroutines.launch
 data class BudgetDetailUiState(
     val budget: BudgetEntity? = null,
     val items: List<BudgetItemEntity> = emptyList(),
+    val client: com.example.myapplication.data.db.entity.ClientEntity? = null,
+    val settings: com.example.myapplication.data.db.entity.SettingsEntity? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
     val isEditing: Boolean = false,
-    val isSaving: Boolean = false
+    val isSaving: Boolean = false,
+    val isGeneratingPdf: Boolean = false,
+    val pdfPath: String? = null
 )
 
 class BudgetDetailViewModel(
     private val budgetRepository: BudgetRepository,
     private val budgetItemRepository: BudgetItemRepository,
+    private val clientRepository: com.example.myapplication.data.repository.ClientRepository,
+    private val settingsRepository: com.example.myapplication.data.repository.SettingsRepository,
+    private val pdfGeneratorService: com.example.myapplication.data.service.PdfGeneratorService,
     private val budgetId: Int
 ) : ViewModel() {
 
@@ -36,6 +43,7 @@ class BudgetDetailViewModel(
     init {
         loadBudget()
         loadItems()
+        loadSettings()
     }
 
     private fun loadBudget() {
@@ -177,6 +185,50 @@ class BudgetDetailViewModel(
         return getItemsTotal() + getLaborTotal() + (_uiState.value.budget?.laborCostPerItem ?: 0.0)
     }
 
+    private fun loadSettings() {
+        viewModelScope.launch {
+            try {
+                settingsRepository.getSettings().collect { settings ->
+                    _uiState.value = _uiState.value.copy(settings = settings)
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Error al cargar configuración: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun generatePdf() {
+        val budget = _uiState.value.budget ?: return
+        val items = _uiState.value.items
+        val settings = _uiState.value.settings ?: return
+
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isGeneratingPdf = true, error = null)
+
+                val client = clientRepository.getClientById(budget.clientId)
+                val pdfPath = pdfGeneratorService.generateBudgetPdf(budget, items, client, settings)
+
+                _uiState.value = _uiState.value.copy(
+                    isGeneratingPdf = false,
+                    pdfPath = pdfPath,
+                    error = null
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isGeneratingPdf = false,
+                    error = "Error al generar PDF: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun clearPdfPath() {
+        _uiState.value = _uiState.value.copy(pdfPath = null)
+    }
+
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
@@ -185,11 +237,21 @@ class BudgetDetailViewModel(
         fun provideFactory(
             budgetRepository: BudgetRepository,
             budgetItemRepository: BudgetItemRepository,
+            clientRepository: com.example.myapplication.data.repository.ClientRepository,
+            settingsRepository: com.example.myapplication.data.repository.SettingsRepository,
+            pdfGeneratorService: com.example.myapplication.data.service.PdfGeneratorService,
             budgetId: Int
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return BudgetDetailViewModel(budgetRepository, budgetItemRepository, budgetId) as T
+                return BudgetDetailViewModel(
+                    budgetRepository,
+                    budgetItemRepository,
+                    clientRepository,
+                    settingsRepository,
+                    pdfGeneratorService,
+                    budgetId
+                ) as T
             }
         }
     }

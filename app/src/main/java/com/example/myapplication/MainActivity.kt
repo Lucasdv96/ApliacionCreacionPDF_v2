@@ -23,7 +23,9 @@ class MainActivity : ComponentActivity() {
                 AppNavGraph(
                     budgetRepository = appContainer.budgetRepository,
                     clientRepository = appContainer.clientRepository,
-                    budgetItemRepository = appContainer.budgetItemRepository
+                    budgetItemRepository = appContainer.budgetItemRepository,
+                    settingsRepository = appContainer.settingsRepository,
+                    pdfGeneratorService = appContainer.pdfGeneratorService
                 )
             }
         }

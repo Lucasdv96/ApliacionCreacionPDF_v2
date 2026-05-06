@@ -39,6 +39,8 @@ fun AppNavGraph(
     budgetRepository: BudgetRepository,
     clientRepository: ClientRepository,
     budgetItemRepository: BudgetItemRepository,
+    settingsRepository: com.example.myapplication.data.repository.SettingsRepository,
+    pdfGeneratorService: com.example.myapplication.data.service.PdfGeneratorService,
     startDestination: String = Destination.Home.route
 ) {
     NavHost(
@@ -101,7 +103,14 @@ fun AppNavGraph(
         composable(Destination.BudgetDetail.route) { backStackEntry ->
             val budgetId = backStackEntry.arguments?.getString("budgetId")?.toIntOrNull() ?: 0
             val viewModel: BudgetDetailViewModel = viewModel(
-                factory = BudgetDetailViewModel.provideFactory(budgetRepository, budgetItemRepository, budgetId)
+                factory = BudgetDetailViewModel.provideFactory(
+                    budgetRepository,
+                    budgetItemRepository,
+                    clientRepository,
+                    settingsRepository,
+                    pdfGeneratorService,
+                    budgetId
+                )
             )
             BudgetDetailScreen(
                 viewModel = viewModel,

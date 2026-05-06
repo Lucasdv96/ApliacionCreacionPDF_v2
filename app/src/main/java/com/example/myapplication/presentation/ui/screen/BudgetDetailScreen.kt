@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -53,10 +54,17 @@ fun BudgetDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showStatusMenu by remember { mutableStateOf(false) }
+    var showPdfSuccess by remember { mutableStateOf(false) }
 
     // Navegar si se eliminó
     if (uiState.budget == null && uiState.error?.contains("no encontrado") == true) {
         onBudgetDeleted()
+    }
+
+    // Mostrar diálogo si se generó el PDF
+    if (uiState.pdfPath != null) {
+        showPdfSuccess = true
+        viewModel.clearPdfPath()
     }
 
     Scaffold(
@@ -253,6 +261,25 @@ fun BudgetDetailScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
+                            onClick = viewModel::generatePdf,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(4.dp),
+                            enabled = !uiState.isSaving && !uiState.isGeneratingPdf
+                        ) {
+                            if (uiState.isGeneratingPdf) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .padding(end = 8.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(Icons.Filled.FileDownload, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
+                            }
+                            Text("PDF")
+                        }
+
+                        Button(
                             onClick = { showDeleteConfirm = true },
                             modifier = Modifier
                                 .weight(1f)
@@ -286,6 +313,20 @@ fun BudgetDetailScreen(
                 onBudgetDeleted()
             },
             onDismiss = { showDeleteConfirm = false }
+        )
+    }
+
+    // Diálogo de PDF generado
+    if (showPdfSuccess) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showPdfSuccess = false },
+            title = { Text("PDF Generado") },
+            text = { Text("El presupuesto se ha exportado correctamente a PDF.") },
+            confirmButton = {
+                Button(onClick = { showPdfSuccess = false }) {
+                    Text("Aceptar")
+                }
+            }
         )
     }
 }
