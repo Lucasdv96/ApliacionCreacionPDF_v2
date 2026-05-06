@@ -120,7 +120,8 @@ class CreateBudgetViewModel(
                     phone = currentState.clientPhone,
                     email = currentState.clientEmail
                 )
-                val clientId = clientRepository.createClient(client).toInt()
+                val clientIdLong = clientRepository.createClient(client)
+                val clientId = if (clientIdLong > 0) clientIdLong.toInt() else 0
 
                 // Crear presupuesto
                 val budgetNumber = budgetRepository.generateBudgetNumber()
@@ -134,17 +135,27 @@ class CreateBudgetViewModel(
                     notes = "",
                     status = "DRAFT"
                 )
-                val budgetId = budgetRepository.createBudget(budget).toInt()
+                val budgetIdLong = budgetRepository.createBudget(budget)
+                val budgetId = if (budgetIdLong > 0) budgetIdLong.toInt() else 0
 
-                _uiState.value = _uiState.value.copy(
-                    isSaving = false,
-                    savedBudgetId = budgetId,
-                    error = null
-                )
+                if (budgetId > 0) {
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        savedBudgetId = budgetId,
+                        error = null
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        error = "Error: No se pudo crear el presupuesto",
+                        savedBudgetId = null
+                    )
+                }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
-                    error = "Error al crear presupuesto: ${e.message}"
+                    error = "Error: ${e.localizedMessage ?: e.message}",
+                    savedBudgetId = null
                 )
             }
         }
