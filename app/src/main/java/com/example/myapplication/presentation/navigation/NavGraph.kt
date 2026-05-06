@@ -1,14 +1,20 @@
 package com.example.myapplication.presentation.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.data.repository.BudgetRepository
+import com.example.myapplication.data.repository.ClientRepository
+import com.example.myapplication.presentation.ui.screen.BudgetDetailScreen
+import com.example.myapplication.presentation.ui.screen.BudgetListScreen
+import com.example.myapplication.presentation.ui.screen.CreateBudgetScreen
 import com.example.myapplication.presentation.ui.screen.HomeScreen
+import com.example.myapplication.presentation.viewmodel.BudgetDetailViewModel
+import com.example.myapplication.presentation.viewmodel.BudgetListViewModel
+import com.example.myapplication.presentation.viewmodel.CreateBudgetViewModel
 import com.example.myapplication.presentation.viewmodel.HomeViewModel
 
 sealed class Destination(val route: String) {
@@ -28,6 +34,7 @@ sealed class Destination(val route: String) {
 fun AppNavGraph(
     navController: NavHostController = rememberNavController(),
     budgetRepository: BudgetRepository,
+    clientRepository: ClientRepository,
     startDestination: String = Destination.Home.route
 ) {
     NavHost(
@@ -53,27 +60,81 @@ fun AppNavGraph(
         }
 
         composable(Destination.BudgetList.route) {
-            // TODO: Implement BudgetListScreen
-            HomeScreen(
-                viewModel = viewModel(
-                    factory = HomeViewModel.provideFactory(budgetRepository)
-                ),
-                onNavigateToBudgetList = {},
+            val viewModel: BudgetListViewModel = viewModel(
+                factory = BudgetListViewModel.provideFactory(budgetRepository)
+            )
+            BudgetListScreen(
+                viewModel = viewModel,
                 onNavigateToCreateBudget = {
                     navController.navigate(Destination.CreateBudget.route)
                 },
-                onNavigateToSettings = {
-                    navController.navigate(Destination.Settings.route)
+                onNavigateToBudgetDetail = { budgetId ->
+                    navController.navigate(Destination.BudgetDetail.createRoute(budgetId))
+                },
+                onNavigateToHome = {
+                    navController.navigate(Destination.Home.route)
                 }
             )
         }
 
         composable(Destination.CreateBudget.route) {
-            // TODO: Implement CreateBudgetScreen
+            val viewModel: CreateBudgetViewModel = viewModel(
+                factory = CreateBudgetViewModel.provideFactory(budgetRepository, clientRepository)
+            )
+            CreateBudgetScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onBudgetCreated = { budgetId ->
+                    navController.navigate(Destination.BudgetDetail.createRoute(budgetId)) {
+                        popUpTo(Destination.CreateBudget.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Destination.BudgetDetail.route) { backStackEntry ->
+            val budgetId = backStackEntry.arguments?.getString("budgetId")?.toIntOrNull() ?: 0
+            val viewModel: BudgetDetailViewModel = viewModel(
+                factory = BudgetDetailViewModel.provideFactory(budgetRepository, budgetId)
+            )
+            BudgetDetailScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToAddItem = { bId ->
+                    navController.navigate(Destination.AddItem.createRoute(bId))
+                },
+                onBudgetDeleted = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Destination.AddItem.route) {
+            // TODO: Implement AddItemScreen (Fase 3)
+            BudgetListScreen(
+                viewModel = viewModel(
+                    factory = BudgetListViewModel.provideFactory(budgetRepository)
+                ),
+                onNavigateToCreateBudget = {},
+                onNavigateToBudgetDetail = {},
+                onNavigateToHome = {}
+            )
         }
 
         composable(Destination.Settings.route) {
-            // TODO: Implement SettingsScreen
+            // TODO: Implement SettingsScreen (Fase 7)
+            HomeScreen(
+                viewModel = viewModel(
+                    factory = HomeViewModel.provideFactory(budgetRepository)
+                ),
+                onNavigateToBudgetList = {},
+                onNavigateToCreateBudget = {},
+                onNavigateToSettings = {}
+            )
         }
     }
 }
