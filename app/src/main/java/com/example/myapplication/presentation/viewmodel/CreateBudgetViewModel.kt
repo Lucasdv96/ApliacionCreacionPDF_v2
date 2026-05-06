@@ -88,9 +88,6 @@ class CreateBudgetViewModel(
         if (currentState.clientCity.isBlank()) {
             errors["clientCity"] = "La ciudad es requerida"
         }
-        if (currentState.projectName.isBlank()) {
-            errors["projectName"] = "El nombre del proyecto es requerido"
-        }
 
         _uiState.value = _uiState.value.copy(validationErrors = errors)
         return errors.isEmpty()
