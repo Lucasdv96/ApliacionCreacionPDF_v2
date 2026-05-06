@@ -22,7 +22,8 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme {
                 AppNavGraph(
                     budgetRepository = appContainer.budgetRepository,
-                    clientRepository = appContainer.clientRepository
+                    clientRepository = appContainer.clientRepository,
+                    budgetItemRepository = appContainer.budgetItemRepository
                 )
             }
         }

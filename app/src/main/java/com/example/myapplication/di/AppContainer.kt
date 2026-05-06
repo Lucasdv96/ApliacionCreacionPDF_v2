@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.example.myapplication.data.db.AppDatabase
 import com.example.myapplication.data.repository.BudgetRepository
+import com.example.myapplication.data.repository.BudgetItemRepository
 import com.example.myapplication.data.repository.ClientRepository
 import com.example.myapplication.data.repository.SettingsRepository
 
@@ -11,6 +12,7 @@ interface AppContainer {
     val budgetRepository: BudgetRepository
     val clientRepository: ClientRepository
     val settingsRepository: SettingsRepository
+    val budgetItemRepository: BudgetItemRepository
 }
 
 class AppDataContainer(private val context: Context) : AppContainer {
@@ -35,5 +37,9 @@ class AppDataContainer(private val context: Context) : AppContainer {
 
     override val settingsRepository: SettingsRepository by lazy {
         SettingsRepository(database.settingsDao())
+    }
+
+    override val budgetItemRepository: BudgetItemRepository by lazy {
+        BudgetItemRepository(database.budgetItemDao())
     }
 }

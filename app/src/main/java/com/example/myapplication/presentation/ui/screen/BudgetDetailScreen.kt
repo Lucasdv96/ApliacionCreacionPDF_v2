@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -149,12 +152,27 @@ fun BudgetDetailScreen(
                     }
 
                     // Sección Items
-                    SectionTitle("🛠️ ITEMS")
-                    if (budget.laborCostPerItem > 0) {
+                    SectionTitle("🛠️ ITEMS (${uiState.items.size})")
+                    if (uiState.items.isEmpty()) {
                         Text(
-                            text = "Mano de obra por item: \$${String.format("%.2f", budget.laborCostPerItem)}",
-                            fontSize = 12.sp
+                            text = "Sin items agregados",
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(8.dp)
                         )
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            uiState.items.forEach { item ->
+                                BudgetItemCard(
+                                    item = item,
+                                    onDelete = { viewModel.deleteItem(item) }
+                                )
+                            }
+                        }
                     }
                     Button(
                         onClick = { onNavigateToAddItem(budget.id) },
@@ -170,14 +188,23 @@ fun BudgetDetailScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("Items:", fontWeight = FontWeight.Bold)
-                        Text("\$0.00")
+                        Text("\$${String.format("%.2f", viewModel.getItemsTotal())}")
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Mano de obra:", fontWeight = FontWeight.Bold)
-                        Text("\$0.00")
+                        Text("Mano de obra (items):", fontWeight = FontWeight.Bold)
+                        Text("\$${String.format("%.2f", viewModel.getLaborTotal())}")
+                    }
+                    if (budget.laborCostPerItem > 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Mano de obra (presupuesto):", fontWeight = FontWeight.Bold)
+                            Text("\$${String.format("%.2f", budget.laborCostPerItem)}")
+                        }
                     }
                     androidx.compose.material3.Divider(
                         modifier = Modifier.padding(vertical = 8.dp)
@@ -187,7 +214,11 @@ fun BudgetDetailScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("TOTAL:", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("\$0.00", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(
+                            "\$${String.format("%.2f", viewModel.getGrandTotal())}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
                     }
 
                     // Sección Notas
@@ -255,4 +286,80 @@ fun BudgetDetailScreen(
             onDismiss = { showDeleteConfirm = false }
         )
     }
+}
+
+@Composable
+fun BudgetItemCard(
+    item: com.example.myapplication.data.db.entity.BudgetItemEntity,
+    onDelete: () -> Unit
+) {
+    val itemTypeDisplay = when (item.type) {
+        "WINDOW" -> "Ventana"
+        "DOOR" -> "Puerta"
+        "RAILING" -> "Baranda"
+        else -> "Otro"
+    }
+    val subtotal = item.quantity * item.unitPrice
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(itemTypeDisplay, fontWeight = FontWeight.Bold)
+                if (item.description.isNotEmpty()) {
+                    Text(item.description, fontSize = 12.sp)
+                }
+                Text(
+                    "Cant: ${item.quantity} x \$${String.format("%.2f", item.unitPrice)}",
+                    fontSize = 12.sp
+                )
+                Text(
+                    "Subtotal: \$${String.format("%.2f", subtotal)}",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+                if (item.laborCost > 0) {
+                    Text(
+                        "M.O.: \$${String.format("%.2f", item.laborCost)}",
+                        fontSize = 12.sp
+                    )
+                }
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Filled.Delete, contentDescription = "Eliminar")
+            }
+        }
+        androidx.compose.material3.Divider()
+    }
+}
+
+@Composable
+fun ConfirmDeleteDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Eliminar Presupuesto") },
+        text = { Text("¿Estás seguro de que deseas eliminar este presupuesto?") },
+        confirmButton = {
+            Button(onClick = onConfirm) {
+                Text("Eliminar")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
 }

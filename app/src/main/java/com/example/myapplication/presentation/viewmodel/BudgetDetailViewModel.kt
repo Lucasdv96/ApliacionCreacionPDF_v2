@@ -4,14 +4,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.db.entity.BudgetEntity
+import com.example.myapplication.data.db.entity.BudgetItemEntity
 import com.example.myapplication.data.repository.BudgetRepository
+import com.example.myapplication.data.repository.BudgetItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 data class BudgetDetailUiState(
     val budget: BudgetEntity? = null,
+    val items: List<BudgetItemEntity> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val isEditing: Boolean = false,
@@ -20,6 +24,7 @@ data class BudgetDetailUiState(
 
 class BudgetDetailViewModel(
     private val budgetRepository: BudgetRepository,
+    private val budgetItemRepository: BudgetItemRepository,
     private val budgetId: Int
 ) : ViewModel() {
 
@@ -30,6 +35,7 @@ class BudgetDetailViewModel(
 
     init {
         loadBudget()
+        loadItems()
     }
 
     private fun loadBudget() {
@@ -46,6 +52,20 @@ class BudgetDetailViewModel(
                 _uiState.value = _uiState.value.copy(
                     error = "Error al cargar presupuesto: ${e.message}",
                     isLoading = false
+                )
+            }
+        }
+    }
+
+    private fun loadItems() {
+        viewModelScope.launch {
+            try {
+                budgetItemRepository.getItemsByBudget(budgetId).collect { items ->
+                    _uiState.value = _uiState.value.copy(items = items)
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Error al cargar items: ${e.message}"
                 )
             }
         }
@@ -127,6 +147,36 @@ class BudgetDetailViewModel(
         }
     }
 
+    fun deleteItem(item: BudgetItemEntity) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isSaving = true)
+                budgetItemRepository.deleteItem(item)
+                _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    error = null
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Error al eliminar item: ${e.message}",
+                    isSaving = false
+                )
+            }
+        }
+    }
+
+    fun getItemsTotal(): Double {
+        return _uiState.value.items.sumOf { it.quantity * it.unitPrice }
+    }
+
+    fun getLaborTotal(): Double {
+        return _uiState.value.items.sumOf { it.laborCost }
+    }
+
+    fun getGrandTotal(): Double {
+        return getItemsTotal() + getLaborTotal() + (_uiState.value.budget?.laborCostPerItem ?: 0.0)
+    }
+
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
@@ -134,11 +184,12 @@ class BudgetDetailViewModel(
     companion object {
         fun provideFactory(
             budgetRepository: BudgetRepository,
+            budgetItemRepository: BudgetItemRepository,
             budgetId: Int
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return BudgetDetailViewModel(budgetRepository, budgetId) as T
+                return BudgetDetailViewModel(budgetRepository, budgetItemRepository, budgetId) as T
             }
         }
     }
