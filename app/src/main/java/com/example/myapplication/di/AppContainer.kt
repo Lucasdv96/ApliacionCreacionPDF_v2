@@ -21,6 +21,7 @@ class AppDataContainer(private val context: Context) : AppContainer {
             "budget_app_database"
         )
             .fallbackToDestructiveMigration()
+            .enableMultiInstanceInvalidation()
             .build()
     }
 
