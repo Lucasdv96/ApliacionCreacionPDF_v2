@@ -35,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.data.db.entity.BudgetItemEntity
+import com.example.myapplication.presentation.ui.components.ConfirmDeleteDialog
 import com.example.myapplication.presentation.viewmodel.BudgetDetailViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -290,7 +292,7 @@ fun BudgetDetailScreen(
 
 @Composable
 fun BudgetItemCard(
-    item: com.example.myapplication.data.db.entity.BudgetItemEntity,
+    item: BudgetItemEntity,
     onDelete: () -> Unit
 ) {
     val itemTypeDisplay = when (item.type) {
@@ -340,26 +342,4 @@ fun BudgetItemCard(
         }
         androidx.compose.material3.Divider()
     }
-}
-
-@Composable
-fun ConfirmDeleteDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Eliminar Presupuesto") },
-        text = { Text("¿Estás seguro de que deseas eliminar este presupuesto?") },
-        confirmButton = {
-            Button(onClick = onConfirm) {
-                Text("Eliminar")
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Cancelar")
-            }
-        }
-    )
 }

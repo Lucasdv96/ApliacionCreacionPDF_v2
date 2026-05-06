@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.data.db.entity.BudgetEntity
+import com.example.myapplication.presentation.ui.components.ConfirmDeleteDialog
 import com.example.myapplication.presentation.viewmodel.BudgetListViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -235,26 +236,4 @@ fun BudgetItemCard(
             }
         }
     }
-}
-
-@Composable
-fun ConfirmDeleteDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Eliminar Presupuesto") },
-        text = { Text("¿Estás seguro de que deseas eliminar este presupuesto?") },
-        confirmButton = {
-            Button(onClick = onConfirm) {
-                Text("Eliminar")
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Cancelar")
-            }
-        }
-    )
 }
