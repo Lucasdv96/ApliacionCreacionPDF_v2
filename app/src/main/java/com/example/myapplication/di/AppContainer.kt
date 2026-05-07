@@ -8,6 +8,7 @@ import com.example.myapplication.data.repository.BudgetItemRepository
 import com.example.myapplication.data.repository.ClientRepository
 import com.example.myapplication.data.repository.SettingsRepository
 import com.example.myapplication.data.service.PdfGeneratorService
+import com.example.myapplication.data.service.SharingService
 
 interface AppContainer {
     val budgetRepository: BudgetRepository
@@ -15,6 +16,7 @@ interface AppContainer {
     val settingsRepository: SettingsRepository
     val budgetItemRepository: BudgetItemRepository
     val pdfGeneratorService: PdfGeneratorService
+    val sharingService: SharingService
 }
 
 class AppDataContainer(private val context: Context) : AppContainer {
@@ -47,5 +49,9 @@ class AppDataContainer(private val context: Context) : AppContainer {
 
     override val pdfGeneratorService: PdfGeneratorService by lazy {
         PdfGeneratorService(context)
+    }
+
+    override val sharingService: SharingService by lazy {
+        SharingService(context)
     }
 }

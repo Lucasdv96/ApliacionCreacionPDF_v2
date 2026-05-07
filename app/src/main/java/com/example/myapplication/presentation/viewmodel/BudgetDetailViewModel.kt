@@ -23,7 +23,9 @@ data class BudgetDetailUiState(
     val isEditing: Boolean = false,
     val isSaving: Boolean = false,
     val isGeneratingPdf: Boolean = false,
-    val pdfPath: String? = null
+    val pdfPath: String? = null,
+    val showShareOptions: Boolean = false,
+    val lastGeneratedPdfPath: String? = null
 )
 
 class BudgetDetailViewModel(
@@ -32,6 +34,7 @@ class BudgetDetailViewModel(
     private val clientRepository: com.example.myapplication.data.repository.ClientRepository,
     private val settingsRepository: com.example.myapplication.data.repository.SettingsRepository,
     private val pdfGeneratorService: com.example.myapplication.data.service.PdfGeneratorService,
+    private val sharingService: com.example.myapplication.data.service.SharingService,
     private val budgetId: Int
 ) : ViewModel() {
 
@@ -214,6 +217,7 @@ class BudgetDetailViewModel(
                 _uiState.value = _uiState.value.copy(
                     isGeneratingPdf = false,
                     pdfPath = pdfPath,
+                    lastGeneratedPdfPath = pdfPath,
                     error = null
                 )
             } catch (e: Exception) {
@@ -223,6 +227,69 @@ class BudgetDetailViewModel(
                 )
             }
         }
+    }
+
+    fun shareGeneratedPdf() {
+        val budget = _uiState.value.budget ?: return
+        val pdfPath = _uiState.value.lastGeneratedPdfPath
+
+        if (pdfPath != null) {
+            sharingService.sharePdf(pdfPath, budget.budgetNumber)
+        } else {
+            _uiState.value = _uiState.value.copy(showShareOptions = true)
+        }
+    }
+
+    fun generateAndShare() {
+        val budget = _uiState.value.budget ?: return
+        val items = _uiState.value.items
+        val settings = _uiState.value.settings ?: return
+
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isGeneratingPdf = true, error = null)
+
+                val client = clientRepository.getClientById(budget.clientId)
+                val pdfPath = pdfGeneratorService.generateBudgetPdf(budget, items, client, settings)
+
+                _uiState.value = _uiState.value.copy(
+                    isGeneratingPdf = false,
+                    lastGeneratedPdfPath = pdfPath,
+                    showShareOptions = true,
+                    error = null
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isGeneratingPdf = false,
+                    error = "Error al generar PDF: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun shareViaWhatsApp() {
+        val budget = _uiState.value.budget ?: return
+        val pdfPath = _uiState.value.lastGeneratedPdfPath ?: return
+        sharingService.shareViaWhatsApp(pdfPath, budget.budgetNumber)
+        _uiState.value = _uiState.value.copy(showShareOptions = false)
+    }
+
+    fun shareViaEmail() {
+        val budget = _uiState.value.budget ?: return
+        val pdfPath = _uiState.value.lastGeneratedPdfPath ?: return
+        sharingService.shareViaEmail(pdfPath, budget.budgetNumber)
+        _uiState.value = _uiState.value.copy(showShareOptions = false)
+    }
+
+    fun shareGeneral() {
+        val budget = _uiState.value.budget ?: return
+        val pdfPath = _uiState.value.lastGeneratedPdfPath ?: return
+        sharingService.sharePdf(pdfPath, budget.budgetNumber)
+        _uiState.value = _uiState.value.copy(showShareOptions = false)
+    }
+
+    fun dismissShareOptions() {
+        _uiState.value = _uiState.value.copy(showShareOptions = false)
     }
 
     fun clearPdfPath() {
@@ -240,6 +307,7 @@ class BudgetDetailViewModel(
             clientRepository: com.example.myapplication.data.repository.ClientRepository,
             settingsRepository: com.example.myapplication.data.repository.SettingsRepository,
             pdfGeneratorService: com.example.myapplication.data.service.PdfGeneratorService,
+            sharingService: com.example.myapplication.data.service.SharingService,
             budgetId: Int
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -250,6 +318,7 @@ class BudgetDetailViewModel(
                     clientRepository,
                     settingsRepository,
                     pdfGeneratorService,
+                    sharingService,
                     budgetId
                 ) as T
             }

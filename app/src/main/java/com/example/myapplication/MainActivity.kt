@@ -25,7 +25,8 @@ class MainActivity : ComponentActivity() {
                     clientRepository = appContainer.clientRepository,
                     budgetItemRepository = appContainer.budgetItemRepository,
                     settingsRepository = appContainer.settingsRepository,
-                    pdfGeneratorService = appContainer.pdfGeneratorService
+                    pdfGeneratorService = appContainer.pdfGeneratorService,
+                    sharingService = appContainer.sharingService
                 )
             }
         }

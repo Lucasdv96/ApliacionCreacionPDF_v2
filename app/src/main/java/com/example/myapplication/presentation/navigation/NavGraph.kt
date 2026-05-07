@@ -41,6 +41,7 @@ fun AppNavGraph(
     budgetItemRepository: BudgetItemRepository,
     settingsRepository: com.example.myapplication.data.repository.SettingsRepository,
     pdfGeneratorService: com.example.myapplication.data.service.PdfGeneratorService,
+    sharingService: com.example.myapplication.data.service.SharingService,
     startDestination: String = Destination.Home.route
 ) {
     NavHost(
@@ -109,6 +110,7 @@ fun AppNavGraph(
                     clientRepository,
                     settingsRepository,
                     pdfGeneratorService,
+                    sharingService,
                     budgetId
                 )
             )
