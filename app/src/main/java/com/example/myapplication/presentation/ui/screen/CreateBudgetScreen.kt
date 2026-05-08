@@ -1,8 +1,10 @@
 package com.example.myapplication.presentation.ui.screen
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,17 +12,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,16 +46,16 @@ fun CreateBudgetScreen(
     onBudgetCreated: (budgetId: Int) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val clientSuggestions by viewModel.clientSuggestions.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Navegar cuando se crea el presupuesto
     if (uiState.savedBudgetId != null) {
         onBudgetCreated(uiState.savedBudgetId!!)
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            androidx.compose.material3.TopAppBar(
                 title = { Text("Nuevo Presupuesto") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -71,13 +77,61 @@ fun CreateBudgetScreen(
             // Sección Cliente
             SectionTitle("DATOS DEL CLIENTE")
 
-            FormTextField(
-                label = "Nombre del Cliente *",
-                value = uiState.clientName,
-                onValueChange = viewModel::updateClientName,
-                error = uiState.validationErrors["clientName"],
-                enabled = !uiState.isSaving
-            )
+            // Nombre con autocomplete
+            Box(modifier = Modifier.fillMaxWidth()) {
+                FormTextField(
+                    label = "Nombre del Cliente *",
+                    value = uiState.clientName,
+                    onValueChange = viewModel::updateClientName,
+                    error = uiState.validationErrors["clientName"],
+                    enabled = !uiState.isSaving
+                )
+                DropdownMenu(
+                    expanded = clientSuggestions.isNotEmpty() && !uiState.isExistingClientSelected,
+                    onDismissRequest = {}
+                ) {
+                    clientSuggestions.take(5).forEach { client ->
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+                                    Text(client.name, fontWeight = FontWeight.Medium)
+                                    val location = listOf(client.city, client.province)
+                                        .filter { it.isNotBlank() }
+                                        .joinToString(", ")
+                                    if (location.isNotBlank()) {
+                                        Text(location, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            },
+                            onClick = { viewModel.selectExistingClient(client) }
+                        )
+                    }
+                }
+            }
+
+            // Badge de cliente seleccionado
+            if (uiState.isExistingClientSelected) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        Icons.Filled.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    Text(
+                        "Cliente existente — datos precargados",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = viewModel::clearClientSelection) {
+                        Text("Cambiar", fontSize = 12.sp)
+                    }
+                }
+            }
 
             FormTextField(
                 label = "CUIT",
@@ -137,8 +191,7 @@ fun CreateBudgetScreen(
                 label = "Mano de Obra",
                 value = if (uiState.laborCost == 0.0) "" else uiState.laborCost.toString(),
                 onValueChange = { value ->
-                    val doubleValue = value.toDoubleOrNull() ?: 0.0
-                    viewModel.updateLaborCost(doubleValue)
+                    viewModel.updateLaborCost(value.toDoubleOrNull() ?: 0.0)
                 },
                 enabled = !uiState.isSaving
             )
@@ -147,7 +200,7 @@ fun CreateBudgetScreen(
             if (uiState.error != null) {
                 Text(
                     text = uiState.error!!,
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                    color = MaterialTheme.colorScheme.error,
                     fontSize = 12.sp,
                     modifier = Modifier.padding(8.dp)
                 )
@@ -223,7 +276,7 @@ fun FormTextField(
         if (error != null) {
             Text(
                 text = error,
-                color = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                color = MaterialTheme.colorScheme.error,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(start = 16.dp, top = 4.dp)
             )

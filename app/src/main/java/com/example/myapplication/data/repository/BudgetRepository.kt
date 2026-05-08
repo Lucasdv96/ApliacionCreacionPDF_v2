@@ -26,6 +26,9 @@ class BudgetRepository(private val budgetDao: BudgetDao) {
 
     suspend fun getBudgetCount(): Int = budgetDao.getBudgetCount()
 
+    fun searchBudgetsWithClient(query: String): Flow<List<BudgetEntity>> =
+        budgetDao.searchBudgetsWithClient(query)
+
     suspend fun generateBudgetNumber(): String {
         val count = getBudgetCount() + 1
         return "PRS-${System.currentTimeMillis().toString().takeLast(6)}-$count"
