@@ -33,4 +33,14 @@ interface BudgetDao {
 
     @Query("DELETE FROM budgets WHERE id = :id")
     suspend fun deleteById(id: Int)
+
+    @Query("""
+        SELECT b.* FROM budgets b
+        LEFT JOIN clients c ON b.clientId = c.id
+        WHERE b.budgetNumber LIKE '%' || :query || '%'
+           OR b.project LIKE '%' || :query || '%'
+           OR c.name LIKE '%' || :query || '%'
+        ORDER BY b.createdDate DESC
+    """)
+    fun searchBudgetsWithClient(query: String): Flow<List<BudgetEntity>>
 }

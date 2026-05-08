@@ -5,62 +5,83 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.db.entity.BudgetEntity
 import com.example.myapplication.data.repository.BudgetRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+enum class SortOrder { DATE_DESC, DATE_ASC, STATUS }
+
+private data class FilterState(
+    val query: String = "",
+    val status: String? = null,
+    val sortOrder: SortOrder = SortOrder.DATE_DESC,
+    val dateFrom: Long? = null,
+    val dateTo: Long? = null
+)
 
 data class BudgetListUiState(
     val budgets: List<BudgetEntity> = emptyList(),
     val filteredBudgets: List<BudgetEntity> = emptyList(),
     val searchQuery: String = "",
     val selectedStatus: String? = null,
+    val sortOrder: SortOrder = SortOrder.DATE_DESC,
+    val dateFrom: Long? = null,
+    val dateTo: Long? = null,
     val isLoading: Boolean = false,
     val error: String? = null
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class BudgetListViewModel(
     private val budgetRepository: BudgetRepository
 ) : ViewModel() {
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
-    private val _selectedStatus = MutableStateFlow<String?>(null)
-    val selectedStatus: StateFlow<String?> = _selectedStatus.asStateFlow()
-
+    private val _filterState = MutableStateFlow(FilterState())
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
     private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
 
-    // Flujo reactivo que combina presupuestos con filtros
+    private val budgetsFlow = _filterState.flatMapLatest { filter ->
+        if (filter.query.isBlank()) {
+            budgetRepository.getAllBudgets()
+        } else {
+            budgetRepository.searchBudgetsWithClient(filter.query)
+        }
+    }
+
     val uiState: StateFlow<BudgetListUiState> = combine(
-        budgetRepository.getAllBudgets(),
-        _searchQuery,
-        _selectedStatus,
+        budgetsFlow,
+        _filterState,
         _isLoading,
         _error
-    ) { budgets, query, status, loading, error ->
-        val filtered = budgets.filter { budget ->
-            val matchesQuery = query.isEmpty() ||
-                budget.budgetNumber.contains(query, ignoreCase = true) ||
-                budget.project.contains(query, ignoreCase = true)
-
-            val matchesStatus = status == null || budget.status == status
-
-            matchesQuery && matchesStatus
-        }.sortedByDescending { it.createdDate }
+    ) { budgets, filter, loading, error ->
+        val filtered = budgets
+            .filter { b ->
+                val matchesStatus = filter.status == null || b.status == filter.status
+                val matchesDateFrom = filter.dateFrom == null || b.createdDate >= filter.dateFrom
+                val matchesDateTo = filter.dateTo == null || b.createdDate <= filter.dateTo
+                matchesStatus && matchesDateFrom && matchesDateTo
+            }
+            .let { list ->
+                when (filter.sortOrder) {
+                    SortOrder.DATE_DESC -> list.sortedByDescending { it.createdDate }
+                    SortOrder.DATE_ASC -> list.sortedBy { it.createdDate }
+                    SortOrder.STATUS -> list.sortedBy { it.status }
+                }
+            }
 
         BudgetListUiState(
             budgets = budgets,
             filteredBudgets = filtered,
-            searchQuery = query,
-            selectedStatus = status,
+            searchQuery = filter.query,
+            selectedStatus = filter.status,
+            sortOrder = filter.sortOrder,
+            dateFrom = filter.dateFrom,
+            dateTo = filter.dateTo,
             isLoading = loading,
             error = error
         )
@@ -71,11 +92,19 @@ class BudgetListViewModel(
     )
 
     fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
+        _filterState.value = _filterState.value.copy(query = query)
     }
 
     fun setStatusFilter(status: String?) {
-        _selectedStatus.value = status
+        _filterState.value = _filterState.value.copy(status = status)
+    }
+
+    fun setSortOrder(order: SortOrder) {
+        _filterState.value = _filterState.value.copy(sortOrder = order)
+    }
+
+    fun setDateRange(from: Long?, to: Long?) {
+        _filterState.value = _filterState.value.copy(dateFrom = from, dateTo = to)
     }
 
     fun deleteBudget(budgetId: Int) {
