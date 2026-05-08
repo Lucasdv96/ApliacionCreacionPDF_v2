@@ -191,6 +191,7 @@ class BudgetDetailViewModel(
     private fun loadSettings() {
         viewModelScope.launch {
             try {
+                settingsRepository.initializeSettings()
                 settingsRepository.getSettings().collect { settings ->
                     _uiState.value = _uiState.value.copy(settings = settings)
                 }
@@ -243,7 +244,10 @@ class BudgetDetailViewModel(
     fun generateAndShare() {
         val budget = _uiState.value.budget ?: return
         val items = _uiState.value.items
-        val settings = _uiState.value.settings ?: return
+        val settings = _uiState.value.settings ?: run {
+            _uiState.value = _uiState.value.copy(error = "Error: configuración no disponible")
+            return
+        }
 
         viewModelScope.launch {
             try {
