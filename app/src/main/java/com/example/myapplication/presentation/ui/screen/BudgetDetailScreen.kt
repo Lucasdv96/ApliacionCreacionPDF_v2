@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -24,6 +25,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -61,6 +63,8 @@ fun BudgetDetailScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showStatusMenu by remember { mutableStateOf(false) }
     var showClientDropdown by remember { mutableStateOf(false) }
+    var showLaborDialog by remember { mutableStateOf(false) }
+    var laborCostInput by remember { mutableStateOf("") }
 
     if (uiState.budget == null && uiState.error?.contains("no encontrado") == true) {
         onBudgetDeleted()
@@ -158,48 +162,12 @@ fun BudgetDetailScreen(
                                 }
                             }
                         }
-                        OutlinedTextField(
-                            value = uiState.editClientCuit,
-                            onValueChange = viewModel::updateEditClientCuit,
-                            label = { Text("CUIT") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = uiState.editClientAddress,
-                            onValueChange = viewModel::updateEditClientAddress,
-                            label = { Text("Dirección") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = uiState.editClientCity,
-                            onValueChange = viewModel::updateEditClientCity,
-                            label = { Text("Ciudad") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = uiState.editClientProvince,
-                            onValueChange = viewModel::updateEditClientProvince,
-                            label = { Text("Provincia") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = uiState.editClientPhone,
-                            onValueChange = viewModel::updateEditClientPhone,
-                            label = { Text("Teléfono") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = uiState.editClientEmail,
-                            onValueChange = viewModel::updateEditClientEmail,
-                            label = { Text("Email") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
+                        OutlinedTextField(value = uiState.editClientCuit, onValueChange = viewModel::updateEditClientCuit, label = { Text("CUIT") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = uiState.editClientAddress, onValueChange = viewModel::updateEditClientAddress, label = { Text("Dirección") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = uiState.editClientCity, onValueChange = viewModel::updateEditClientCity, label = { Text("Ciudad") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = uiState.editClientProvince, onValueChange = viewModel::updateEditClientProvince, label = { Text("Provincia") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = uiState.editClientPhone, onValueChange = viewModel::updateEditClientPhone, label = { Text("Teléfono") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = uiState.editClientEmail, onValueChange = viewModel::updateEditClientEmail, label = { Text("Email") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                     } else {
                         val client = uiState.client
                         if (client != null) {
@@ -214,25 +182,10 @@ fun BudgetDetailScreen(
 
                     SectionTitle("📁 PROYECTO")
                     if (uiState.isEditing) {
-                        OutlinedTextField(
-                            value = uiState.editProjectName,
-                            onValueChange = viewModel::updateEditProjectName,
-                            label = { Text("Nombre del proyecto") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = uiState.editLaborCost,
-                            onValueChange = viewModel::updateEditLaborCost,
-                            label = { Text("Mano de obra") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
+                        OutlinedTextField(value = uiState.editProjectName, onValueChange = viewModel::updateEditProjectName, label = { Text("Nombre del proyecto") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = uiState.editLaborCost, onValueChange = viewModel::updateEditLaborCost, label = { Text("Mano de obra") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                     } else {
                         Text(text = "Proyecto: ${budget.project}", fontSize = 14.sp)
-                        if (budget.laborCostPerItem > 0) {
-                            Text(text = "Mano de obra: \$${String.format("%.2f", budget.laborCostPerItem)}", fontSize = 14.sp)
-                        }
                         Text(text = "Creado: ${dateFormat.format(Date(budget.createdDate))}", fontSize = 12.sp)
                     }
 
@@ -243,25 +196,15 @@ fun BudgetDetailScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Estado:", modifier = Modifier.weight(0.3f))
-                        Button(
-                            onClick = { showStatusMenu = true },
-                            modifier = Modifier.weight(0.7f)
-                        ) {
+                        Button(onClick = { showStatusMenu = true }, modifier = Modifier.weight(0.7f)) {
                             Text(budget.status)
-                            DropdownMenu(
-                                expanded = showStatusMenu,
-                                onDismissRequest = { showStatusMenu = false }
-                            ) {
-                                listOf("DRAFT", "SENT", "ACCEPTED", "REJECTED", "COMPLETED")
-                                    .forEach { status ->
-                                        DropdownMenuItem(
-                                            text = { Text(status) },
-                                            onClick = {
-                                                viewModel.updateBudgetStatus(status)
-                                                showStatusMenu = false
-                                            }
-                                        )
-                                    }
+                            DropdownMenu(expanded = showStatusMenu, onDismissRequest = { showStatusMenu = false }) {
+                                listOf("DRAFT", "SENT", "ACCEPTED", "REJECTED", "COMPLETED").forEach { status ->
+                                    DropdownMenuItem(
+                                        text = { Text(status) },
+                                        onClick = { viewModel.updateBudgetStatus(status); showStatusMenu = false }
+                                    )
+                                }
                             }
                         }
                     }
@@ -270,19 +213,33 @@ fun BudgetDetailScreen(
                     if (uiState.items.isEmpty()) {
                         Text(text = "Sin items agregados", fontSize = 12.sp, modifier = Modifier.padding(8.dp))
                     } else {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             uiState.items.forEach { item ->
                                 BudgetItemCard(item = item, onDelete = { viewModel.deleteItem(item) })
                             }
                         }
                     }
+
                     Button(
                         onClick = { onNavigateToAddItem(budget.id) },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("+ Agregar Item") }
+
+                    OutlinedButton(
+                        onClick = {
+                            laborCostInput = if (budget.laborCostPerItem > 0)
+                                budget.laborCostPerItem.toString() else ""
+                            showLaborDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            if (budget.laborCostPerItem > 0)
+                                "Mano de obra: \$${String.format("%.2f", budget.laborCostPerItem)}"
+                            else
+                                "+ Agregar mano de obra"
+                        )
+                    }
 
                     SectionTitle("💰 RESUMEN")
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -295,7 +252,7 @@ fun BudgetDetailScreen(
                     }
                     if (budget.laborCostPerItem > 0) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Mano de obra (presupuesto):", fontWeight = FontWeight.Bold)
+                            Text("Mano de obra:", fontWeight = FontWeight.Bold)
                             Text("\$${String.format("%.2f", budget.laborCostPerItem)}")
                         }
                     }
@@ -323,10 +280,7 @@ fun BudgetDetailScreen(
                         )
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = viewModel::generateAndShare,
                             modifier = Modifier.weight(1f).padding(4.dp),
@@ -339,16 +293,8 @@ fun BudgetDetailScreen(
                             }
                             Text("Compartir")
                         }
-                        Button(
-                            onClick = { showDeleteConfirm = true },
-                            modifier = Modifier.weight(1f).padding(4.dp),
-                            enabled = !uiState.isSaving
-                        ) { Text("Eliminar") }
-                        Button(
-                            onClick = onNavigateBack,
-                            modifier = Modifier.weight(1f).padding(4.dp),
-                            enabled = !uiState.isSaving
-                        ) { Text("Volver") }
+                        Button(onClick = { showDeleteConfirm = true }, modifier = Modifier.weight(1f).padding(4.dp), enabled = !uiState.isSaving) { Text("Eliminar") }
+                        Button(onClick = onNavigateBack, modifier = Modifier.weight(1f).padding(4.dp), enabled = !uiState.isSaving) { Text("Volver") }
                     }
                 }
             }
@@ -357,12 +303,33 @@ fun BudgetDetailScreen(
 
     if (showDeleteConfirm) {
         ConfirmDeleteDialog(
-            onConfirm = {
-                viewModel.deleteBudget()
-                showDeleteConfirm = false
-                onBudgetDeleted()
-            },
+            onConfirm = { viewModel.deleteBudget(); showDeleteConfirm = false; onBudgetDeleted() },
             onDismiss = { showDeleteConfirm = false }
+        )
+    }
+
+    if (showLaborDialog) {
+        AlertDialog(
+            onDismissRequest = { showLaborDialog = false },
+            title = { Text("Mano de obra") },
+            text = {
+                OutlinedTextField(
+                    value = laborCostInput,
+                    onValueChange = { laborCostInput = it },
+                    label = { Text("Costo de mano de obra") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.saveLaborCost(laborCostInput.toDoubleOrNull() ?: 0.0)
+                    showLaborDialog = false
+                }) { Text("Guardar") }
+            },
+            dismissButton = {
+                Button(onClick = { showLaborDialog = false }) { Text("Cancelar") }
+            }
         )
     }
 
@@ -385,6 +352,7 @@ fun BudgetItemCard(
         "WINDOW" -> "Ventana"
         "DOOR" -> "Puerta"
         "RAILING" -> "Baranda"
+        "LABOR" -> "Mano de obra"
         else -> "Otro"
     }
     val subtotal = item.quantity * item.unitPrice
@@ -402,9 +370,7 @@ fun BudgetItemCard(
                 Text("Subtotal: \$${String.format("%.2f", subtotal)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 if (item.laborCost > 0) Text("M.O.: \$${String.format("%.2f", item.laborCost)}", fontSize = 12.sp)
             }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Filled.Delete, contentDescription = "Eliminar")
-            }
+            IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = "Eliminar") }
         }
         androidx.compose.material3.Divider()
     }
