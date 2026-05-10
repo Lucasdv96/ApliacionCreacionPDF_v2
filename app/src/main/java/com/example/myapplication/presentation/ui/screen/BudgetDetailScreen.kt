@@ -60,6 +60,7 @@ fun BudgetDetailScreen(
     val clientSuggestions by viewModel.clientSuggestions.collectAsState()
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showStatusMenu by remember { mutableStateOf(false) }
+    var showClientDropdown by remember { mutableStateOf(false) }
 
     if (uiState.budget == null && uiState.error?.contains("no encontrado") == true) {
         onBudgetDeleted()
@@ -119,20 +120,22 @@ fun BudgetDetailScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Sección Cliente
                     SectionTitle("👤 CLIENTE")
                     if (uiState.isEditing) {
                         Box(modifier = Modifier.fillMaxWidth()) {
                             OutlinedTextField(
                                 value = uiState.editClientName,
-                                onValueChange = viewModel::updateEditClientName,
+                                onValueChange = {
+                                    viewModel.updateEditClientName(it)
+                                    showClientDropdown = true
+                                },
                                 label = { Text("Nombre del cliente") },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true
                             )
                             DropdownMenu(
-                                expanded = clientSuggestions.isNotEmpty(),
-                                onDismissRequest = {}
+                                expanded = showClientDropdown && clientSuggestions.isNotEmpty(),
+                                onDismissRequest = { showClientDropdown = false }
                             ) {
                                 clientSuggestions.take(5).forEach { client ->
                                     DropdownMenuItem(
@@ -147,7 +150,10 @@ fun BudgetDetailScreen(
                                                 }
                                             }
                                         },
-                                        onClick = { viewModel.selectClientSuggestion(client) }
+                                        onClick = {
+                                            viewModel.selectClientSuggestion(client)
+                                            showClientDropdown = false
+                                        }
                                     )
                                 }
                             }
@@ -206,7 +212,6 @@ fun BudgetDetailScreen(
                         }
                     }
 
-                    // Sección Proyecto
                     SectionTitle("📁 PROYECTO")
                     if (uiState.isEditing) {
                         OutlinedTextField(
@@ -231,7 +236,6 @@ fun BudgetDetailScreen(
                         Text(text = "Creado: ${dateFormat.format(Date(budget.createdDate))}", fontSize = 12.sp)
                     }
 
-                    // Sección Estado
                     SectionTitle("📋 ESTADO")
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -262,7 +266,6 @@ fun BudgetDetailScreen(
                         }
                     }
 
-                    // Sección Items
                     SectionTitle("🛠️ ITEMS (${uiState.items.size})")
                     if (uiState.items.isEmpty()) {
                         Text(text = "Sin items agregados", fontSize = 12.sp, modifier = Modifier.padding(8.dp))
@@ -281,7 +284,6 @@ fun BudgetDetailScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("+ Agregar Item") }
 
-                    // Sección Resumen
                     SectionTitle("💰 RESUMEN")
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Items:", fontWeight = FontWeight.Bold)
@@ -303,7 +305,6 @@ fun BudgetDetailScreen(
                         Text("\$${String.format("%.2f", viewModel.getGrandTotal())}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
 
-                    // Sección Notas
                     SectionTitle("📝 NOTAS")
                     OutlinedTextField(
                         value = budget.notes,
@@ -322,7 +323,6 @@ fun BudgetDetailScreen(
                         )
                     }
 
-                    // Botones
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
