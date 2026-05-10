@@ -62,6 +62,9 @@ fun AppNavGraph(
                 },
                 onNavigateToSettings = {
                     navController.navigate(Destination.Settings.route)
+                },
+                onNavigateToBudgetDetail = { budgetId ->
+                    navController.navigate(Destination.BudgetDetail.createRoute(budgetId))
                 }
             )
         }

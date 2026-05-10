@@ -39,7 +39,8 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onNavigateToBudgetList: () -> Unit,
     onNavigateToCreateBudget: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    onNavigateToBudgetDetail: (Int) -> Unit = {}
 ) {
     val budgets by viewModel.budgets.collectAsState()
 
@@ -70,6 +71,7 @@ fun HomeScreen(
         } else {
             BudgetListView(
                 budgets = budgets,
+                onBudgetClick = onNavigateToBudgetDetail,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
@@ -112,6 +114,7 @@ fun EmptyBudgetsView(
 @Composable
 fun BudgetListView(
     budgets: List<BudgetEntity>,
+    onBudgetClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -121,7 +124,7 @@ fun BudgetListView(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(budgets) { budget ->
-            BudgetCard(budget = budget, dateFormat = dateFormat)
+            BudgetCard(budget = budget, dateFormat = dateFormat, onClick = { onBudgetClick(budget.id) })
         }
     }
 }
@@ -130,9 +133,11 @@ fun BudgetListView(
 fun BudgetCard(
     budget: BudgetEntity,
     dateFormat: SimpleDateFormat,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp)

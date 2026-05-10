@@ -74,10 +74,8 @@ fun CreateBudgetScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Sección Cliente
             SectionTitle("DATOS DEL CLIENTE")
 
-            // Nombre con autocomplete
             Box(modifier = Modifier.fillMaxWidth()) {
                 FormTextField(
                     label = "Nombre del Cliente *",
@@ -109,7 +107,6 @@ fun CreateBudgetScreen(
                 }
             }
 
-            // Badge de cliente seleccionado
             if (uiState.isExistingClientSelected) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -176,7 +173,6 @@ fun CreateBudgetScreen(
                 enabled = !uiState.isSaving
             )
 
-            // Sección Presupuesto
             SectionTitle("PROYECTO")
 
             FormTextField(
@@ -187,16 +183,6 @@ fun CreateBudgetScreen(
                 enabled = !uiState.isSaving
             )
 
-            FormTextField(
-                label = "Mano de Obra",
-                value = if (uiState.laborCost == 0.0) "" else uiState.laborCost.toString(),
-                onValueChange = { value ->
-                    viewModel.updateLaborCost(value.toDoubleOrNull() ?: 0.0)
-                },
-                enabled = !uiState.isSaving
-            )
-
-            // Mensaje de error
             if (uiState.error != null) {
                 Text(
                     text = uiState.error!!,
@@ -206,7 +192,6 @@ fun CreateBudgetScreen(
                 )
             }
 
-            // Botones
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

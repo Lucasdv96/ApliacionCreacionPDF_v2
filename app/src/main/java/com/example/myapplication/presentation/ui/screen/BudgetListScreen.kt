@@ -129,7 +129,6 @@ fun BudgetListScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Búsqueda
             OutlinedTextField(
                 value = uiState.searchQuery,
                 onValueChange = viewModel::updateSearchQuery,
@@ -139,7 +138,6 @@ fun BudgetListScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            // Filtro por estado (scrollable)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -155,13 +153,11 @@ fun BudgetListScreen(
                 StatusFilterButton("Completado", "COMPLETED", uiState.selectedStatus, viewModel::setStatusFilter)
             }
 
-            // Filtro por fecha
             DateFilterRow(
                 dateFrom = uiState.dateFrom,
                 onDateRangeSelected = { from, to -> viewModel.setDateRange(from, to) }
             )
 
-            // Contador
             if (uiState.filteredBudgets.isNotEmpty()) {
                 Text(
                     text = "${uiState.filteredBudgets.size} presupuesto(s)",
@@ -171,7 +167,6 @@ fun BudgetListScreen(
                 )
             }
 
-            // Lista de presupuestos
             if (uiState.filteredBudgets.isEmpty()) {
                 Column(
                     modifier = Modifier

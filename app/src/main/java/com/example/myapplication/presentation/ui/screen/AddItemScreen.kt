@@ -83,6 +83,7 @@ fun AddItemScreen(
                         "WINDOW" -> "Ventana"
                         "DOOR" -> "Puerta"
                         "RAILING" -> "Baranda"
+                        "LABOR" -> "Mano de obra"
                         else -> "Otro"
                     }
                     Text(displayType)
@@ -90,11 +91,12 @@ fun AddItemScreen(
                         expanded = showTypeMenu,
                         onDismissRequest = { showTypeMenu = false }
                     ) {
-                        listOf("WINDOW", "DOOR", "RAILING", "OTHER").forEach { type ->
+                        listOf("WINDOW", "DOOR", "RAILING", "LABOR", "OTHER").forEach { type ->
                             val displayName = when (type) {
                                 "WINDOW" -> "Ventana"
                                 "DOOR" -> "Puerta"
                                 "RAILING" -> "Baranda"
+                                "LABOR" -> "Mano de obra"
                                 else -> "Otro"
                             }
                             DropdownMenuItem(
@@ -155,17 +157,18 @@ fun AddItemScreen(
                 )
             }
 
-            SectionTitle("MANO DE OBRA")
-
-            FormTextField(
-                label = "Costo de Mano de Obra (opcional)",
-                value = if (uiState.laborCost == 0.0) "" else uiState.laborCost.toString(),
-                onValueChange = { value ->
-                    val doubleValue = value.toDoubleOrNull() ?: 0.0
-                    viewModel.updateLaborCost(doubleValue)
-                },
-                enabled = !uiState.isSaving
-            )
+            if (uiState.type != "LABOR") {
+                SectionTitle("MANO DE OBRA")
+                FormTextField(
+                    label = "Costo de Mano de Obra (opcional)",
+                    value = if (uiState.laborCost == 0.0) "" else uiState.laborCost.toString(),
+                    onValueChange = { value ->
+                        val doubleValue = value.toDoubleOrNull() ?: 0.0
+                        viewModel.updateLaborCost(doubleValue)
+                    },
+                    enabled = !uiState.isSaving
+                )
+            }
 
             SectionTitle("NOTAS")
 
@@ -176,7 +179,6 @@ fun AddItemScreen(
                 enabled = !uiState.isSaving
             )
 
-            // Mensaje de error
             if (uiState.error != null) {
                 Text(
                     text = uiState.error!!,
@@ -186,7 +188,6 @@ fun AddItemScreen(
                 )
             }
 
-            // Botones
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

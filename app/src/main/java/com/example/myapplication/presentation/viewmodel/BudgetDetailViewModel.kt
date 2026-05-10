@@ -8,9 +8,13 @@ import com.example.myapplication.data.db.entity.BudgetItemEntity
 import com.example.myapplication.data.repository.BudgetRepository
 import com.example.myapplication.data.repository.BudgetItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class BudgetDetailUiState(
@@ -25,7 +29,16 @@ data class BudgetDetailUiState(
     val isGeneratingPdf: Boolean = false,
     val pdfPath: String? = null,
     val showShareOptions: Boolean = false,
-    val lastGeneratedPdfPath: String? = null
+    val lastGeneratedPdfPath: String? = null,
+    val editProjectName: String = "",
+    val editLaborCost: String = "",
+    val editClientName: String = "",
+    val editClientCuit: String = "",
+    val editClientAddress: String = "",
+    val editClientCity: String = "",
+    val editClientProvince: String = "",
+    val editClientPhone: String = "",
+    val editClientEmail: String = ""
 )
 
 class BudgetDetailViewModel(
@@ -43,6 +56,17 @@ class BudgetDetailViewModel(
     )
     val uiState: StateFlow<BudgetDetailUiState> = _uiState.asStateFlow()
 
+    private val _clientSearchQuery = MutableStateFlow("")
+
+    @kotlinx.coroutines.ExperimentalCoroutinesApi
+    val clientSuggestions: StateFlow<List<com.example.myapplication.data.db.entity.ClientEntity>> =
+        _clientSearchQuery
+            .flatMapLatest { query ->
+                if (query.length >= 2) clientRepository.searchClients(query)
+                else flowOf(emptyList())
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     init {
         loadBudget()
         loadItems()
@@ -54,8 +78,10 @@ class BudgetDetailViewModel(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 val budget = budgetRepository.getBudgetById(budgetId)
+                val client = if (budget != null) clientRepository.getClientById(budget.clientId) else null
                 _uiState.value = _uiState.value.copy(
                     budget = budget,
+                    client = client,
                     isLoading = false,
                     error = if (budget == null) "Presupuesto no encontrado" else null
                 )
@@ -84,7 +110,6 @@ class BudgetDetailViewModel(
 
     fun updateBudgetStatus(newStatus: String) {
         val currentBudget = _uiState.value.budget ?: return
-
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isSaving = true)
@@ -109,7 +134,6 @@ class BudgetDetailViewModel(
 
     fun updateBudgetNotes(notes: String) {
         val currentBudget = _uiState.value.budget ?: return
-
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isSaving = true)
@@ -133,22 +157,98 @@ class BudgetDetailViewModel(
     }
 
     fun toggleEditMode() {
+        val budget = _uiState.value.budget ?: return
+        val client = _uiState.value.client
+        if (!_uiState.value.isEditing) {
+            _uiState.value = _uiState.value.copy(
+                isEditing = true,
+                editProjectName = budget.project,
+                editLaborCost = if (budget.laborCostPerItem > 0) budget.laborCostPerItem.toString() else "",
+                editClientName = client?.name ?: "",
+                editClientCuit = client?.cuit ?: "",
+                editClientAddress = client?.address ?: "",
+                editClientCity = client?.city ?: "",
+                editClientProvince = client?.province ?: "",
+                editClientPhone = client?.phone ?: "",
+                editClientEmail = client?.email ?: ""
+            )
+        } else {
+            _uiState.value = _uiState.value.copy(isEditing = false)
+        }
+    }
+
+    fun updateEditProjectName(name: String) { _uiState.value = _uiState.value.copy(editProjectName = name) }
+    fun updateEditLaborCost(cost: String) { _uiState.value = _uiState.value.copy(editLaborCost = cost) }
+    fun updateEditClientName(name: String) {
+        _uiState.value = _uiState.value.copy(editClientName = name)
+        _clientSearchQuery.value = name
+    }
+    fun selectClientSuggestion(client: com.example.myapplication.data.db.entity.ClientEntity) {
+        _clientSearchQuery.value = ""
         _uiState.value = _uiState.value.copy(
-            isEditing = !_uiState.value.isEditing
+            editClientName = client.name,
+            editClientCuit = client.cuit,
+            editClientAddress = client.address,
+            editClientCity = client.city,
+            editClientProvince = client.province,
+            editClientPhone = client.phone,
+            editClientEmail = client.email,
+            client = client
         )
+    }
+    fun updateEditClientCuit(cuit: String) { _uiState.value = _uiState.value.copy(editClientCuit = cuit) }
+    fun updateEditClientAddress(address: String) { _uiState.value = _uiState.value.copy(editClientAddress = address) }
+    fun updateEditClientCity(city: String) { _uiState.value = _uiState.value.copy(editClientCity = city) }
+    fun updateEditClientProvince(province: String) { _uiState.value = _uiState.value.copy(editClientProvince = province) }
+    fun updateEditClientPhone(phone: String) { _uiState.value = _uiState.value.copy(editClientPhone = phone) }
+    fun updateEditClientEmail(email: String) { _uiState.value = _uiState.value.copy(editClientEmail = email) }
+
+    fun saveChanges() {
+        val budget = _uiState.value.budget ?: return
+        val client = _uiState.value.client
+        val s = _uiState.value
+        viewModelScope.launch {
+            try {
+                _uiState.value = s.copy(isSaving = true)
+                val updatedBudget = budget.copy(
+                    project = s.editProjectName,
+                    laborCostPerItem = s.editLaborCost.toDoubleOrNull() ?: 0.0,
+                    modifiedDate = System.currentTimeMillis()
+                )
+                budgetRepository.updateBudget(updatedBudget)
+                val updatedClient = client?.copy(
+                    name = s.editClientName,
+                    cuit = s.editClientCuit,
+                    address = s.editClientAddress,
+                    city = s.editClientCity,
+                    province = s.editClientProvince,
+                    phone = s.editClientPhone,
+                    email = s.editClientEmail
+                )
+                if (updatedClient != null) clientRepository.updateClient(updatedClient)
+                _uiState.value = _uiState.value.copy(
+                    budget = updatedBudget,
+                    client = updatedClient ?: client,
+                    isEditing = false,
+                    isSaving = false,
+                    error = null
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Error al guardar: ${e.message}",
+                    isSaving = false
+                )
+            }
+        }
     }
 
     fun deleteBudget() {
         val currentBudget = _uiState.value.budget ?: return
-
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isSaving = true)
                 budgetRepository.deleteBudgetById(currentBudget.id)
-                _uiState.value = _uiState.value.copy(
-                    isSaving = false,
-                    error = null
-                )
+                _uiState.value = _uiState.value.copy(isSaving = false, error = null)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = "Error al eliminar: ${e.message}",
@@ -163,10 +263,7 @@ class BudgetDetailViewModel(
             try {
                 _uiState.value = _uiState.value.copy(isSaving = true)
                 budgetItemRepository.deleteItem(item)
-                _uiState.value = _uiState.value.copy(
-                    isSaving = false,
-                    error = null
-                )
+                _uiState.value = _uiState.value.copy(isSaving = false, error = null)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = "Error al eliminar item: ${e.message}",
@@ -176,17 +273,9 @@ class BudgetDetailViewModel(
         }
     }
 
-    fun getItemsTotal(): Double {
-        return _uiState.value.items.sumOf { it.quantity * it.unitPrice }
-    }
-
-    fun getLaborTotal(): Double {
-        return _uiState.value.items.sumOf { it.laborCost }
-    }
-
-    fun getGrandTotal(): Double {
-        return getItemsTotal() + getLaborTotal() + (_uiState.value.budget?.laborCostPerItem ?: 0.0)
-    }
+    fun getItemsTotal(): Double = _uiState.value.items.sumOf { it.quantity * it.unitPrice }
+    fun getLaborTotal(): Double = _uiState.value.items.sumOf { it.laborCost }
+    fun getGrandTotal(): Double = getItemsTotal() + getLaborTotal() + (_uiState.value.budget?.laborCostPerItem ?: 0.0)
 
     private fun loadSettings() {
         viewModelScope.launch {
@@ -207,14 +296,11 @@ class BudgetDetailViewModel(
         val budget = _uiState.value.budget ?: return
         val items = _uiState.value.items
         val settings = _uiState.value.settings ?: return
-
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isGeneratingPdf = true, error = null)
-
                 val client = clientRepository.getClientById(budget.clientId)
                 val pdfPath = pdfGeneratorService.generateBudgetPdf(budget, items, client, settings)
-
                 _uiState.value = _uiState.value.copy(
                     isGeneratingPdf = false,
                     pdfPath = pdfPath,
@@ -233,12 +319,8 @@ class BudgetDetailViewModel(
     fun shareGeneratedPdf() {
         val budget = _uiState.value.budget ?: return
         val pdfPath = _uiState.value.lastGeneratedPdfPath
-
-        if (pdfPath != null) {
-            sharingService.sharePdf(pdfPath, budget.budgetNumber)
-        } else {
-            _uiState.value = _uiState.value.copy(showShareOptions = true)
-        }
+        if (pdfPath != null) sharingService.sharePdf(pdfPath, budget.budgetNumber)
+        else _uiState.value = _uiState.value.copy(showShareOptions = true)
     }
 
     fun generateAndShare() {
@@ -248,14 +330,11 @@ class BudgetDetailViewModel(
             _uiState.value = _uiState.value.copy(error = "Error: configuración no disponible")
             return
         }
-
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isGeneratingPdf = true, error = null)
-
                 val client = clientRepository.getClientById(budget.clientId)
                 val pdfPath = pdfGeneratorService.generateBudgetPdf(budget, items, client, settings)
-
                 _uiState.value = _uiState.value.copy(
                     isGeneratingPdf = false,
                     lastGeneratedPdfPath = pdfPath,
@@ -292,17 +371,9 @@ class BudgetDetailViewModel(
         _uiState.value = _uiState.value.copy(showShareOptions = false)
     }
 
-    fun dismissShareOptions() {
-        _uiState.value = _uiState.value.copy(showShareOptions = false)
-    }
-
-    fun clearPdfPath() {
-        _uiState.value = _uiState.value.copy(pdfPath = null)
-    }
-
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
-    }
+    fun dismissShareOptions() { _uiState.value = _uiState.value.copy(showShareOptions = false) }
+    fun clearPdfPath() { _uiState.value = _uiState.value.copy(pdfPath = null) }
+    fun clearError() { _uiState.value = _uiState.value.copy(error = null) }
 
     companion object {
         fun provideFactory(
@@ -317,13 +388,8 @@ class BudgetDetailViewModel(
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return BudgetDetailViewModel(
-                    budgetRepository,
-                    budgetItemRepository,
-                    clientRepository,
-                    settingsRepository,
-                    pdfGeneratorService,
-                    sharingService,
-                    budgetId
+                    budgetRepository, budgetItemRepository, clientRepository,
+                    settingsRepository, pdfGeneratorService, sharingService, budgetId
                 ) as T
             }
         }

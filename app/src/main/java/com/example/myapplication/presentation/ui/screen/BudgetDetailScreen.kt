@@ -1,6 +1,7 @@
 package com.example.myapplication.presentation.ui.screen
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,7 +14,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -21,6 +25,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -53,24 +58,35 @@ fun BudgetDetailScreen(
     onBudgetDeleted: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    @Suppress("OPT_IN_USAGE")
+    val clientSuggestions by viewModel.clientSuggestions.collectAsState()
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showStatusMenu by remember { mutableStateOf(false) }
+    var showClientDropdown by remember { mutableStateOf(false) }
+    var showLaborDialog by remember { mutableStateOf(false) }
+    var laborCostInput by remember { mutableStateOf("") }
 
-    // Navegar si se eliminó
     if (uiState.budget == null && uiState.error?.contains("no encontrado") == true) {
         onBudgetDeleted()
     }
 
-
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(uiState.budget?.budgetNumber ?: "Presupuesto")
-                },
+                title = { Text(uiState.budget?.budgetNumber ?: "Presupuesto") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        if (uiState.isEditing) viewModel.saveChanges() else viewModel.toggleEditMode()
+                    }) {
+                        Icon(
+                            if (uiState.isEditing) Icons.Filled.Done else Icons.Filled.Edit,
+                            contentDescription = if (uiState.isEditing) "Guardar" else "Editar"
+                        )
                     }
                 }
             )
@@ -79,28 +95,20 @@ fun BudgetDetailScreen(
         when {
             uiState.isLoading -> {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                    modifier = Modifier.fillMaxSize().padding(paddingValues),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator()
-                }
+                ) { CircularProgressIndicator() }
             }
 
             uiState.budget == null -> {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                    modifier = Modifier.fillMaxSize().padding(paddingValues),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text("Presupuesto no encontrado")
-                    Button(onClick = onNavigateBack, modifier = Modifier.padding(top = 16.dp)) {
-                        Text("Volver")
-                    }
+                    Button(onClick = onNavigateBack, modifier = Modifier.padding(top = 16.dp)) { Text("Volver") }
                 }
             }
 
@@ -116,16 +124,71 @@ fun BudgetDetailScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Sección Cliente
                     SectionTitle("👤 CLIENTE")
-                    Text(text = "Nombre: ${budget.project}", fontSize = 14.sp)
-                    Text(text = "Proyecto: ${budget.project}", fontSize = 14.sp)
-                    Text(
-                        text = "Creado: ${dateFormat.format(Date(budget.createdDate))}",
-                        fontSize = 12.sp
-                    )
+                    if (uiState.isEditing) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = uiState.editClientName,
+                                onValueChange = {
+                                    viewModel.updateEditClientName(it)
+                                    showClientDropdown = true
+                                },
+                                label = { Text("Nombre del cliente") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                            DropdownMenu(
+                                expanded = showClientDropdown && clientSuggestions.isNotEmpty(),
+                                onDismissRequest = { showClientDropdown = false }
+                            ) {
+                                clientSuggestions.take(5).forEach { client ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Column {
+                                                Text(client.name, fontWeight = FontWeight.Medium)
+                                                val location = listOf(client.city, client.province)
+                                                    .filter { it.isNotBlank() }.joinToString(", ")
+                                                if (location.isNotBlank()) {
+                                                    Text(location, fontSize = 11.sp,
+                                                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+                                                }
+                                            }
+                                        },
+                                        onClick = {
+                                            viewModel.selectClientSuggestion(client)
+                                            showClientDropdown = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        OutlinedTextField(value = uiState.editClientCuit, onValueChange = viewModel::updateEditClientCuit, label = { Text("CUIT") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = uiState.editClientAddress, onValueChange = viewModel::updateEditClientAddress, label = { Text("Dirección") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = uiState.editClientCity, onValueChange = viewModel::updateEditClientCity, label = { Text("Ciudad") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = uiState.editClientProvince, onValueChange = viewModel::updateEditClientProvince, label = { Text("Provincia") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = uiState.editClientPhone, onValueChange = viewModel::updateEditClientPhone, label = { Text("Teléfono") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = uiState.editClientEmail, onValueChange = viewModel::updateEditClientEmail, label = { Text("Email") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    } else {
+                        val client = uiState.client
+                        if (client != null) {
+                            Text(text = "Nombre: ${client.name}", fontSize = 14.sp)
+                            if (client.cuit.isNotBlank()) Text(text = "CUIT: ${client.cuit}", fontSize = 12.sp)
+                            if (client.address.isNotBlank()) Text(text = "Dirección: ${client.address}", fontSize = 12.sp)
+                            if (client.city.isNotBlank()) Text(text = "Ciudad: ${client.city}", fontSize = 12.sp)
+                            if (client.phone.isNotBlank()) Text(text = "Tel: ${client.phone}", fontSize = 12.sp)
+                            if (client.email.isNotBlank()) Text(text = "Email: ${client.email}", fontSize = 12.sp)
+                        }
+                    }
 
-                    // Sección Estado
+                    SectionTitle("📁 PROYECTO")
+                    if (uiState.isEditing) {
+                        OutlinedTextField(value = uiState.editProjectName, onValueChange = viewModel::updateEditProjectName, label = { Text("Nombre del proyecto") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(value = uiState.editLaborCost, onValueChange = viewModel::updateEditLaborCost, label = { Text("Mano de obra") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    } else {
+                        Text(text = "Proyecto: ${budget.project}", fontSize = 14.sp)
+                        Text(text = "Creado: ${dateFormat.format(Date(budget.createdDate))}", fontSize = 12.sp)
+                    }
+
                     SectionTitle("📋 ESTADO")
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -133,112 +196,81 @@ fun BudgetDetailScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Estado:", modifier = Modifier.weight(0.3f))
-                        Button(
-                            onClick = { showStatusMenu = true },
-                            modifier = Modifier.weight(0.7f)
-                        ) {
+                        Button(onClick = { showStatusMenu = true }, modifier = Modifier.weight(0.7f)) {
                             Text(budget.status)
-                            DropdownMenu(
-                                expanded = showStatusMenu,
-                                onDismissRequest = { showStatusMenu = false }
-                            ) {
-                                listOf("DRAFT", "SENT", "ACCEPTED", "REJECTED", "COMPLETED")
-                                    .forEach { status ->
-                                        DropdownMenuItem(
-                                            text = { Text(status) },
-                                            onClick = {
-                                                viewModel.updateBudgetStatus(status)
-                                                showStatusMenu = false
-                                            }
-                                        )
-                                    }
+                            DropdownMenu(expanded = showStatusMenu, onDismissRequest = { showStatusMenu = false }) {
+                                listOf("DRAFT", "SENT", "ACCEPTED", "REJECTED", "COMPLETED").forEach { status ->
+                                    DropdownMenuItem(
+                                        text = { Text(status) },
+                                        onClick = { viewModel.updateBudgetStatus(status); showStatusMenu = false }
+                                    )
+                                }
                             }
                         }
                     }
 
-                    // Sección Items
                     SectionTitle("🛠️ ITEMS (${uiState.items.size})")
                     if (uiState.items.isEmpty()) {
-                        Text(
-                            text = "Sin items agregados",
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(8.dp)
-                        )
+                        Text(text = "Sin items agregados", fontSize = 12.sp, modifier = Modifier.padding(8.dp))
                     } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             uiState.items.forEach { item ->
-                                BudgetItemCard(
-                                    item = item,
-                                    onDelete = { viewModel.deleteItem(item) }
-                                )
+                                BudgetItemCard(item = item, onDelete = { viewModel.deleteItem(item) })
                             }
                         }
                     }
+
                     Button(
                         onClick = { onNavigateToAddItem(budget.id) },
                         modifier = Modifier.fillMaxWidth()
+                    ) { Text("+ Agregar Item") }
+
+                    OutlinedButton(
+                        onClick = {
+                            laborCostInput = if (budget.laborCostPerItem > 0)
+                                budget.laborCostPerItem.toString() else ""
+                            showLaborDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("+ Agregar Item")
+                        Text(
+                            if (budget.laborCostPerItem > 0)
+                                "Mano de obra: \$${String.format("%.2f", budget.laborCostPerItem)}"
+                            else
+                                "+ Agregar mano de obra"
+                        )
                     }
 
-                    // Sección Resumen
                     SectionTitle("💰 RESUMEN")
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Items:", fontWeight = FontWeight.Bold)
                         Text("\$${String.format("%.2f", viewModel.getItemsTotal())}")
                     }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Mano de obra (items):", fontWeight = FontWeight.Bold)
                         Text("\$${String.format("%.2f", viewModel.getLaborTotal())}")
                     }
                     if (budget.laborCostPerItem > 0) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Mano de obra (presupuesto):", fontWeight = FontWeight.Bold)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Mano de obra:", fontWeight = FontWeight.Bold)
                             Text("\$${String.format("%.2f", budget.laborCostPerItem)}")
                         }
                     }
-                    androidx.compose.material3.Divider(
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                    androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("TOTAL:", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text(
-                            "\$${String.format("%.2f", viewModel.getGrandTotal())}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
+                        Text("\$${String.format("%.2f", viewModel.getGrandTotal())}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
 
-                    // Sección Notas
                     SectionTitle("📝 NOTAS")
                     OutlinedTextField(
                         value = budget.notes,
                         onValueChange = { viewModel.updateBudgetNotes(it) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         minLines = 3,
                         enabled = !uiState.isSaving
                     )
 
-                    // Mensaje de error
                     if (uiState.error != null) {
                         Text(
                             text = uiState.error!!,
@@ -248,69 +280,59 @@ fun BudgetDetailScreen(
                         )
                     }
 
-                    // Botones
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = viewModel::generateAndShare,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(4.dp),
+                            modifier = Modifier.weight(1f).padding(4.dp),
                             enabled = !uiState.isSaving && !uiState.isGeneratingPdf
                         ) {
                             if (uiState.isGeneratingPdf) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.padding(end = 8.dp),
-                                    strokeWidth = 2.dp
-                                )
+                                CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
                             } else {
                                 Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
                             }
                             Text("Compartir")
                         }
-
-                        Button(
-                            onClick = { showDeleteConfirm = true },
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(4.dp),
-                            enabled = !uiState.isSaving
-                        ) {
-                            Text("Eliminar")
-                        }
-
-                        Button(
-                            onClick = onNavigateBack,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(4.dp),
-                            enabled = !uiState.isSaving
-                        ) {
-                            Text("Volver")
-                        }
+                        Button(onClick = { showDeleteConfirm = true }, modifier = Modifier.weight(1f).padding(4.dp), enabled = !uiState.isSaving) { Text("Eliminar") }
+                        Button(onClick = onNavigateBack, modifier = Modifier.weight(1f).padding(4.dp), enabled = !uiState.isSaving) { Text("Volver") }
                     }
                 }
             }
         }
     }
 
-    // Diálogo de confirmación
     if (showDeleteConfirm) {
         ConfirmDeleteDialog(
-            onConfirm = {
-                viewModel.deleteBudget()
-                showDeleteConfirm = false
-                onBudgetDeleted()
-            },
+            onConfirm = { viewModel.deleteBudget(); showDeleteConfirm = false; onBudgetDeleted() },
             onDismiss = { showDeleteConfirm = false }
         )
     }
 
-    // Diálogo opciones para compartir
+    if (showLaborDialog) {
+        AlertDialog(
+            onDismissRequest = { showLaborDialog = false },
+            title = { Text("Mano de obra") },
+            text = {
+                OutlinedTextField(
+                    value = laborCostInput,
+                    onValueChange = { laborCostInput = it },
+                    label = { Text("Costo de mano de obra") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.saveLaborCost(laborCostInput.toDoubleOrNull() ?: 0.0)
+                    showLaborDialog = false
+                }) { Text("Guardar") }
+            },
+            dismissButton = {
+                Button(onClick = { showLaborDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
     if (uiState.showShareOptions) {
         ShareOptionsDialog(
             onWhatsApp = viewModel::shareViaWhatsApp,
@@ -330,46 +352,25 @@ fun BudgetItemCard(
         "WINDOW" -> "Ventana"
         "DOOR" -> "Puerta"
         "RAILING" -> "Baranda"
+        "LABOR" -> "Mano de obra"
         else -> "Otro"
     }
     val subtotal = item.quantity * item.unitPrice
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(itemTypeDisplay, fontWeight = FontWeight.Bold)
-                if (item.description.isNotEmpty()) {
-                    Text(item.description, fontSize = 12.sp)
-                }
-                Text(
-                    "Cant: ${item.quantity} x \$${String.format("%.2f", item.unitPrice)}",
-                    fontSize = 12.sp
-                )
-                Text(
-                    "Subtotal: \$${String.format("%.2f", subtotal)}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
-                if (item.laborCost > 0) {
-                    Text(
-                        "M.O.: \$${String.format("%.2f", item.laborCost)}",
-                        fontSize = 12.sp
-                    )
-                }
+                if (item.description.isNotEmpty()) Text(item.description, fontSize = 12.sp)
+                Text("Cant: ${item.quantity} x \$${String.format("%.2f", item.unitPrice)}", fontSize = 12.sp)
+                Text("Subtotal: \$${String.format("%.2f", subtotal)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                if (item.laborCost > 0) Text("M.O.: \$${String.format("%.2f", item.laborCost)}", fontSize = 12.sp)
             }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Filled.Delete, contentDescription = "Eliminar")
-            }
+            IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = "Eliminar") }
         }
         androidx.compose.material3.Divider()
     }
