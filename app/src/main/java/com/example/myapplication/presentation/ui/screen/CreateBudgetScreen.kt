@@ -183,15 +183,6 @@ fun CreateBudgetScreen(
                 enabled = !uiState.isSaving
             )
 
-            FormTextField(
-                label = "Mano de Obra",
-                value = if (uiState.laborCost == 0.0) "" else uiState.laborCost.toString(),
-                onValueChange = { value ->
-                    viewModel.updateLaborCost(value.toDoubleOrNull() ?: 0.0)
-                },
-                enabled = !uiState.isSaving
-            )
-
             if (uiState.error != null) {
                 Text(
                     text = uiState.error!!,

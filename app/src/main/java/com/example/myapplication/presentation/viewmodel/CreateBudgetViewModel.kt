@@ -26,7 +26,6 @@ data class CreateBudgetUiState(
     val clientPhone: String = "",
     val clientEmail: String = "",
     val projectName: String = "",
-    val laborCost: Double = 0.0,
     val isExistingClientSelected: Boolean = false,
     val isSaving: Boolean = false,
     val error: String? = null,
@@ -85,37 +84,13 @@ class CreateBudgetViewModel(
         _uiState.value = _uiState.value.copy(isExistingClientSelected = false)
     }
 
-    fun updateClientCuit(cuit: String) {
-        _uiState.value = _uiState.value.copy(clientCuit = cuit)
-    }
-
-    fun updateClientAddress(address: String) {
-        _uiState.value = _uiState.value.copy(clientAddress = address)
-    }
-
-    fun updateClientCity(city: String) {
-        _uiState.value = _uiState.value.copy(clientCity = city)
-    }
-
-    fun updateClientProvince(province: String) {
-        _uiState.value = _uiState.value.copy(clientProvince = province)
-    }
-
-    fun updateClientPhone(phone: String) {
-        _uiState.value = _uiState.value.copy(clientPhone = phone)
-    }
-
-    fun updateClientEmail(email: String) {
-        _uiState.value = _uiState.value.copy(clientEmail = email)
-    }
-
-    fun updateProjectName(project: String) {
-        _uiState.value = _uiState.value.copy(projectName = project)
-    }
-
-    fun updateLaborCost(cost: Double) {
-        _uiState.value = _uiState.value.copy(laborCost = cost)
-    }
+    fun updateClientCuit(cuit: String) { _uiState.value = _uiState.value.copy(clientCuit = cuit) }
+    fun updateClientAddress(address: String) { _uiState.value = _uiState.value.copy(clientAddress = address) }
+    fun updateClientCity(city: String) { _uiState.value = _uiState.value.copy(clientCity = city) }
+    fun updateClientProvince(province: String) { _uiState.value = _uiState.value.copy(clientProvince = province) }
+    fun updateClientPhone(phone: String) { _uiState.value = _uiState.value.copy(clientPhone = phone) }
+    fun updateClientEmail(email: String) { _uiState.value = _uiState.value.copy(clientEmail = email) }
+    fun updateProjectName(project: String) { _uiState.value = _uiState.value.copy(projectName = project) }
 
     private fun validateForm(): Boolean {
         val errors = mutableMapOf<String, String>()
@@ -128,9 +103,7 @@ class CreateBudgetViewModel(
 
     fun saveBudget() {
         if (!validateForm()) {
-            _uiState.value = _uiState.value.copy(
-                error = "Por favor completa los campos requeridos"
-            )
+            _uiState.value = _uiState.value.copy(error = "Por favor completa los campos requeridos")
             return
         }
 
@@ -173,7 +146,7 @@ class CreateBudgetViewModel(
                     createdDate = System.currentTimeMillis(),
                     modifiedDate = System.currentTimeMillis(),
                     project = s.projectName,
-                    laborCostPerItem = s.laborCost,
+                    laborCostPerItem = 0.0,
                     notes = "",
                     status = "DRAFT"
                 )
@@ -181,31 +154,17 @@ class CreateBudgetViewModel(
                 val budgetId = if (budgetIdLong > 0) budgetIdLong.toInt() else 0
 
                 if (budgetId > 0) {
-                    _uiState.value = _uiState.value.copy(
-                        isSaving = false,
-                        savedBudgetId = budgetId,
-                        error = null
-                    )
+                    _uiState.value = _uiState.value.copy(isSaving = false, savedBudgetId = budgetId, error = null)
                 } else {
-                    _uiState.value = _uiState.value.copy(
-                        isSaving = false,
-                        error = "Error: No se pudo crear el presupuesto",
-                        savedBudgetId = null
-                    )
+                    _uiState.value = _uiState.value.copy(isSaving = false, error = "Error: No se pudo crear el presupuesto", savedBudgetId = null)
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isSaving = false,
-                    error = "Error: ${e.localizedMessage ?: e.message}",
-                    savedBudgetId = null
-                )
+                _uiState.value = _uiState.value.copy(isSaving = false, error = "Error: ${e.localizedMessage ?: e.message}", savedBudgetId = null)
             }
         }
     }
 
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
-    }
+    fun clearError() { _uiState.value = _uiState.value.copy(error = null) }
 
     companion object {
         fun provideFactory(
