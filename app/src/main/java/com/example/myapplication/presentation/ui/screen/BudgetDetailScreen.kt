@@ -13,6 +13,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -72,6 +74,16 @@ fun BudgetDetailScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
                     }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        if (uiState.isEditing) viewModel.saveChanges() else viewModel.toggleEditMode()
+                    }) {
+                        Icon(
+                            if (uiState.isEditing) Icons.Filled.Done else Icons.Filled.Edit,
+                            contentDescription = if (uiState.isEditing) "Guardar" else "Editar"
+                        )
+                    }
                 }
             )
         }
@@ -118,12 +130,95 @@ fun BudgetDetailScreen(
                 ) {
                     // Sección Cliente
                     SectionTitle("👤 CLIENTE")
-                    Text(text = "Nombre: ${budget.project}", fontSize = 14.sp)
-                    Text(text = "Proyecto: ${budget.project}", fontSize = 14.sp)
-                    Text(
-                        text = "Creado: ${dateFormat.format(Date(budget.createdDate))}",
-                        fontSize = 12.sp
-                    )
+                    if (uiState.isEditing) {
+                        OutlinedTextField(
+                            value = uiState.editClientName,
+                            onValueChange = viewModel::updateEditClientName,
+                            label = { Text("Nombre del cliente") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = uiState.editClientCuit,
+                            onValueChange = viewModel::updateEditClientCuit,
+                            label = { Text("CUIT") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = uiState.editClientAddress,
+                            onValueChange = viewModel::updateEditClientAddress,
+                            label = { Text("Dirección") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = uiState.editClientCity,
+                            onValueChange = viewModel::updateEditClientCity,
+                            label = { Text("Ciudad") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = uiState.editClientProvince,
+                            onValueChange = viewModel::updateEditClientProvince,
+                            label = { Text("Provincia") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = uiState.editClientPhone,
+                            onValueChange = viewModel::updateEditClientPhone,
+                            label = { Text("Teléfono") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = uiState.editClientEmail,
+                            onValueChange = viewModel::updateEditClientEmail,
+                            label = { Text("Email") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    } else {
+                        val client = uiState.client
+                        if (client != null) {
+                            Text(text = "Nombre: ${client.name}", fontSize = 14.sp)
+                            if (client.cuit.isNotBlank()) Text(text = "CUIT: ${client.cuit}", fontSize = 12.sp)
+                            if (client.address.isNotBlank()) Text(text = "Dirección: ${client.address}", fontSize = 12.sp)
+                            if (client.city.isNotBlank()) Text(text = "Ciudad: ${client.city}", fontSize = 12.sp)
+                            if (client.phone.isNotBlank()) Text(text = "Tel: ${client.phone}", fontSize = 12.sp)
+                            if (client.email.isNotBlank()) Text(text = "Email: ${client.email}", fontSize = 12.sp)
+                        }
+                    }
+
+                    // Sección Proyecto
+                    SectionTitle("📁 PROYECTO")
+                    if (uiState.isEditing) {
+                        OutlinedTextField(
+                            value = uiState.editProjectName,
+                            onValueChange = viewModel::updateEditProjectName,
+                            label = { Text("Nombre del proyecto") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = uiState.editLaborCost,
+                            onValueChange = viewModel::updateEditLaborCost,
+                            label = { Text("Mano de obra") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    } else {
+                        Text(text = "Proyecto: ${budget.project}", fontSize = 14.sp)
+                        if (budget.laborCostPerItem > 0) {
+                            Text(text = "Mano de obra: \$${String.format("%.2f", budget.laborCostPerItem)}", fontSize = 14.sp)
+                        }
+                        Text(
+                            text = "Creado: ${dateFormat.format(Date(budget.createdDate))}",
+                            fontSize = 12.sp
+                        )
+                    }
 
                     // Sección Estado
                     SectionTitle("📋 ESTADO")

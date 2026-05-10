@@ -25,7 +25,17 @@ data class BudgetDetailUiState(
     val isGeneratingPdf: Boolean = false,
     val pdfPath: String? = null,
     val showShareOptions: Boolean = false,
-    val lastGeneratedPdfPath: String? = null
+    val lastGeneratedPdfPath: String? = null,
+    // Campos editables
+    val editProjectName: String = "",
+    val editLaborCost: String = "",
+    val editClientName: String = "",
+    val editClientCuit: String = "",
+    val editClientAddress: String = "",
+    val editClientCity: String = "",
+    val editClientProvince: String = "",
+    val editClientPhone: String = "",
+    val editClientEmail: String = ""
 )
 
 class BudgetDetailViewModel(
@@ -54,8 +64,10 @@ class BudgetDetailViewModel(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 val budget = budgetRepository.getBudgetById(budgetId)
+                val client = if (budget != null) clientRepository.getClientById(budget.clientId) else null
                 _uiState.value = _uiState.value.copy(
                     budget = budget,
+                    client = client,
                     isLoading = false,
                     error = if (budget == null) "Presupuesto no encontrado" else null
                 )
@@ -133,9 +145,77 @@ class BudgetDetailViewModel(
     }
 
     fun toggleEditMode() {
-        _uiState.value = _uiState.value.copy(
-            isEditing = !_uiState.value.isEditing
-        )
+        val budget = _uiState.value.budget ?: return
+        val client = _uiState.value.client
+        if (!_uiState.value.isEditing) {
+            _uiState.value = _uiState.value.copy(
+                isEditing = true,
+                editProjectName = budget.project,
+                editLaborCost = if (budget.laborCostPerItem > 0) budget.laborCostPerItem.toString() else "",
+                editClientName = client?.name ?: "",
+                editClientCuit = client?.cuit ?: "",
+                editClientAddress = client?.address ?: "",
+                editClientCity = client?.city ?: "",
+                editClientProvince = client?.province ?: "",
+                editClientPhone = client?.phone ?: "",
+                editClientEmail = client?.email ?: ""
+            )
+        } else {
+            _uiState.value = _uiState.value.copy(isEditing = false)
+        }
+    }
+
+    fun updateEditProjectName(name: String) { _uiState.value = _uiState.value.copy(editProjectName = name) }
+    fun updateEditLaborCost(cost: String) { _uiState.value = _uiState.value.copy(editLaborCost = cost) }
+    fun updateEditClientName(name: String) { _uiState.value = _uiState.value.copy(editClientName = name) }
+    fun updateEditClientCuit(cuit: String) { _uiState.value = _uiState.value.copy(editClientCuit = cuit) }
+    fun updateEditClientAddress(address: String) { _uiState.value = _uiState.value.copy(editClientAddress = address) }
+    fun updateEditClientCity(city: String) { _uiState.value = _uiState.value.copy(editClientCity = city) }
+    fun updateEditClientProvince(province: String) { _uiState.value = _uiState.value.copy(editClientProvince = province) }
+    fun updateEditClientPhone(phone: String) { _uiState.value = _uiState.value.copy(editClientPhone = phone) }
+    fun updateEditClientEmail(email: String) { _uiState.value = _uiState.value.copy(editClientEmail = email) }
+
+    fun saveChanges() {
+        val budget = _uiState.value.budget ?: return
+        val client = _uiState.value.client
+        val s = _uiState.value
+
+        viewModelScope.launch {
+            try {
+                _uiState.value = s.copy(isSaving = true)
+
+                val updatedBudget = budget.copy(
+                    project = s.editProjectName,
+                    laborCostPerItem = s.editLaborCost.toDoubleOrNull() ?: 0.0,
+                    modifiedDate = System.currentTimeMillis()
+                )
+                budgetRepository.updateBudget(updatedBudget)
+
+                val updatedClient = client?.copy(
+                    name = s.editClientName,
+                    cuit = s.editClientCuit,
+                    address = s.editClientAddress,
+                    city = s.editClientCity,
+                    province = s.editClientProvince,
+                    phone = s.editClientPhone,
+                    email = s.editClientEmail
+                )
+                if (updatedClient != null) clientRepository.updateClient(updatedClient)
+
+                _uiState.value = _uiState.value.copy(
+                    budget = updatedBudget,
+                    client = updatedClient ?: client,
+                    isEditing = false,
+                    isSaving = false,
+                    error = null
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Error al guardar: ${e.message}",
+                    isSaving = false
+                )
+            }
+        }
     }
 
     fun deleteBudget() {
