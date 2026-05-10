@@ -1,6 +1,7 @@
 package com.example.myapplication.presentation.ui.screen
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -55,21 +56,19 @@ fun BudgetDetailScreen(
     onBudgetDeleted: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    @Suppress("OPT_IN_USAGE")
+    val clientSuggestions by viewModel.clientSuggestions.collectAsState()
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showStatusMenu by remember { mutableStateOf(false) }
 
-    // Navegar si se eliminó
     if (uiState.budget == null && uiState.error?.contains("no encontrado") == true) {
         onBudgetDeleted()
     }
 
-
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(uiState.budget?.budgetNumber ?: "Presupuesto")
-                },
+                title = { Text(uiState.budget?.budgetNumber ?: "Presupuesto") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
@@ -91,28 +90,20 @@ fun BudgetDetailScreen(
         when {
             uiState.isLoading -> {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                    modifier = Modifier.fillMaxSize().padding(paddingValues),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator()
-                }
+                ) { CircularProgressIndicator() }
             }
 
             uiState.budget == null -> {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                    modifier = Modifier.fillMaxSize().padding(paddingValues),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text("Presupuesto no encontrado")
-                    Button(onClick = onNavigateBack, modifier = Modifier.padding(top = 16.dp)) {
-                        Text("Volver")
-                    }
+                    Button(onClick = onNavigateBack, modifier = Modifier.padding(top = 16.dp)) { Text("Volver") }
                 }
             }
 
@@ -131,13 +122,36 @@ fun BudgetDetailScreen(
                     // Sección Cliente
                     SectionTitle("👤 CLIENTE")
                     if (uiState.isEditing) {
-                        OutlinedTextField(
-                            value = uiState.editClientName,
-                            onValueChange = viewModel::updateEditClientName,
-                            label = { Text("Nombre del cliente") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = uiState.editClientName,
+                                onValueChange = viewModel::updateEditClientName,
+                                label = { Text("Nombre del cliente") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                            DropdownMenu(
+                                expanded = clientSuggestions.isNotEmpty(),
+                                onDismissRequest = {}
+                            ) {
+                                clientSuggestions.take(5).forEach { client ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Column {
+                                                Text(client.name, fontWeight = FontWeight.Medium)
+                                                val location = listOf(client.city, client.province)
+                                                    .filter { it.isNotBlank() }.joinToString(", ")
+                                                if (location.isNotBlank()) {
+                                                    Text(location, fontSize = 11.sp,
+                                                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+                                                }
+                                            }
+                                        },
+                                        onClick = { viewModel.selectClientSuggestion(client) }
+                                    )
+                                }
+                            }
+                        }
                         OutlinedTextField(
                             value = uiState.editClientCuit,
                             onValueChange = viewModel::updateEditClientCuit,
@@ -214,10 +228,7 @@ fun BudgetDetailScreen(
                         if (budget.laborCostPerItem > 0) {
                             Text(text = "Mano de obra: \$${String.format("%.2f", budget.laborCostPerItem)}", fontSize = 14.sp)
                         }
-                        Text(
-                            text = "Creado: ${dateFormat.format(Date(budget.createdDate))}",
-                            fontSize = 12.sp
-                        )
+                        Text(text = "Creado: ${dateFormat.format(Date(budget.createdDate))}", fontSize = 12.sp)
                     }
 
                     // Sección Estado
@@ -254,71 +265,42 @@ fun BudgetDetailScreen(
                     // Sección Items
                     SectionTitle("🛠️ ITEMS (${uiState.items.size})")
                     if (uiState.items.isEmpty()) {
-                        Text(
-                            text = "Sin items agregados",
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(8.dp)
-                        )
+                        Text(text = "Sin items agregados", fontSize = 12.sp, modifier = Modifier.padding(8.dp))
                     } else {
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
+                            modifier = Modifier.fillMaxWidth().padding(8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             uiState.items.forEach { item ->
-                                BudgetItemCard(
-                                    item = item,
-                                    onDelete = { viewModel.deleteItem(item) }
-                                )
+                                BudgetItemCard(item = item, onDelete = { viewModel.deleteItem(item) })
                             }
                         }
                     }
                     Button(
                         onClick = { onNavigateToAddItem(budget.id) },
                         modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("+ Agregar Item")
-                    }
+                    ) { Text("+ Agregar Item") }
 
                     // Sección Resumen
                     SectionTitle("💰 RESUMEN")
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Items:", fontWeight = FontWeight.Bold)
                         Text("\$${String.format("%.2f", viewModel.getItemsTotal())}")
                     }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Mano de obra (items):", fontWeight = FontWeight.Bold)
                         Text("\$${String.format("%.2f", viewModel.getLaborTotal())}")
                     }
                     if (budget.laborCostPerItem > 0) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Mano de obra (presupuesto):", fontWeight = FontWeight.Bold)
                             Text("\$${String.format("%.2f", budget.laborCostPerItem)}")
                         }
                     }
-                    androidx.compose.material3.Divider(
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                    androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("TOTAL:", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text(
-                            "\$${String.format("%.2f", viewModel.getGrandTotal())}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
+                        Text("\$${String.format("%.2f", viewModel.getGrandTotal())}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
 
                     // Sección Notas
@@ -326,14 +308,11 @@ fun BudgetDetailScreen(
                     OutlinedTextField(
                         value = budget.notes,
                         onValueChange = { viewModel.updateBudgetNotes(it) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         minLines = 3,
                         enabled = !uiState.isSaving
                     )
 
-                    // Mensaje de error
                     if (uiState.error != null) {
                         Text(
                             text = uiState.error!!,
@@ -345,55 +324,37 @@ fun BudgetDetailScreen(
 
                     // Botones
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
                             onClick = viewModel::generateAndShare,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(4.dp),
+                            modifier = Modifier.weight(1f).padding(4.dp),
                             enabled = !uiState.isSaving && !uiState.isGeneratingPdf
                         ) {
                             if (uiState.isGeneratingPdf) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.padding(end = 8.dp),
-                                    strokeWidth = 2.dp
-                                )
+                                CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
                             } else {
                                 Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
                             }
                             Text("Compartir")
                         }
-
                         Button(
                             onClick = { showDeleteConfirm = true },
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(4.dp),
+                            modifier = Modifier.weight(1f).padding(4.dp),
                             enabled = !uiState.isSaving
-                        ) {
-                            Text("Eliminar")
-                        }
-
+                        ) { Text("Eliminar") }
                         Button(
                             onClick = onNavigateBack,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(4.dp),
+                            modifier = Modifier.weight(1f).padding(4.dp),
                             enabled = !uiState.isSaving
-                        ) {
-                            Text("Volver")
-                        }
+                        ) { Text("Volver") }
                     }
                 }
             }
         }
     }
 
-    // Diálogo de confirmación
     if (showDeleteConfirm) {
         ConfirmDeleteDialog(
             onConfirm = {
@@ -405,7 +366,6 @@ fun BudgetDetailScreen(
         )
     }
 
-    // Diálogo opciones para compartir
     if (uiState.showShareOptions) {
         ShareOptionsDialog(
             onWhatsApp = viewModel::shareViaWhatsApp,
@@ -429,38 +389,18 @@ fun BudgetItemCard(
     }
     val subtotal = item.quantity * item.unitPrice
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(itemTypeDisplay, fontWeight = FontWeight.Bold)
-                if (item.description.isNotEmpty()) {
-                    Text(item.description, fontSize = 12.sp)
-                }
-                Text(
-                    "Cant: ${item.quantity} x \$${String.format("%.2f", item.unitPrice)}",
-                    fontSize = 12.sp
-                )
-                Text(
-                    "Subtotal: \$${String.format("%.2f", subtotal)}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
-                if (item.laborCost > 0) {
-                    Text(
-                        "M.O.: \$${String.format("%.2f", item.laborCost)}",
-                        fontSize = 12.sp
-                    )
-                }
+                if (item.description.isNotEmpty()) Text(item.description, fontSize = 12.sp)
+                Text("Cant: ${item.quantity} x \$${String.format("%.2f", item.unitPrice)}", fontSize = 12.sp)
+                Text("Subtotal: \$${String.format("%.2f", subtotal)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                if (item.laborCost > 0) Text("M.O.: \$${String.format("%.2f", item.laborCost)}", fontSize = 12.sp)
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Filled.Delete, contentDescription = "Eliminar")
