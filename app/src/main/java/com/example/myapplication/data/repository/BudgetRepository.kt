@@ -29,8 +29,11 @@ class BudgetRepository(private val budgetDao: BudgetDao) {
     fun searchBudgetsWithClient(query: String): Flow<List<BudgetEntity>> =
         budgetDao.searchBudgetsWithClient(query)
 
-    suspend fun generateBudgetNumber(): String {
+    suspend fun generateBudgetNumber(projectName: String): String {
         val count = getBudgetCount() + 1
-        return "PRS-${System.currentTimeMillis().toString().takeLast(6)}-$count"
+        val monthFormat = java.text.SimpleDateFormat("MMM", java.util.Locale.getDefault())
+        val month = monthFormat.format(java.util.Date())
+        val sequence = count.toString().padStart(2, '0')
+        return "$projectName-$month-$sequence"
     }
 }

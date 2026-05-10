@@ -166,7 +166,7 @@ class CreateBudgetViewModel(
                     clientRepository.createClient(client).toInt()
                 }
 
-                val budgetNumber = budgetRepository.generateBudgetNumber()
+                val budgetNumber = budgetRepository.generateBudgetNumber(s.projectName)
                 val budget = BudgetEntity(
                     budgetNumber = budgetNumber,
                     clientId = clientId,
