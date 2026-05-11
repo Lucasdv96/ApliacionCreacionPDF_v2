@@ -273,6 +273,26 @@ class BudgetDetailViewModel(
         }
     }
 
+    fun saveLaborCost(cost: Double) {
+        val currentBudget = _uiState.value.budget ?: return
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isSaving = true)
+                val updatedBudget = currentBudget.copy(
+                    laborCostPerItem = cost,
+                    modifiedDate = System.currentTimeMillis()
+                )
+                budgetRepository.updateBudget(updatedBudget)
+                _uiState.value = _uiState.value.copy(budget = updatedBudget, isSaving = false, error = null)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Error al guardar mano de obra: ${e.message}",
+                    isSaving = false
+                )
+            }
+        }
+    }
+
     fun getItemsTotal(): Double = _uiState.value.items.sumOf { it.quantity * it.unitPrice }
     fun getLaborTotal(): Double = _uiState.value.items.sumOf { it.laborCost }
     fun getGrandTotal(): Double = getItemsTotal() + getLaborTotal() + (_uiState.value.budget?.laborCostPerItem ?: 0.0)
