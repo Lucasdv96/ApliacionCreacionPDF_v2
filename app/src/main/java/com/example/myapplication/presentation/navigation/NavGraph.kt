@@ -14,11 +14,13 @@ import com.example.myapplication.presentation.ui.screen.BudgetDetailScreen
 import com.example.myapplication.presentation.ui.screen.BudgetListScreen
 import com.example.myapplication.presentation.ui.screen.CreateBudgetScreen
 import com.example.myapplication.presentation.ui.screen.HomeScreen
+import com.example.myapplication.presentation.ui.screen.SettingsScreen
 import com.example.myapplication.presentation.viewmodel.AddItemViewModel
 import com.example.myapplication.presentation.viewmodel.BudgetDetailViewModel
 import com.example.myapplication.presentation.viewmodel.BudgetListViewModel
 import com.example.myapplication.presentation.viewmodel.CreateBudgetViewModel
 import com.example.myapplication.presentation.viewmodel.HomeViewModel
+import com.example.myapplication.presentation.viewmodel.SettingsViewModel
 
 sealed class Destination(val route: String) {
     data object Home : Destination("home")
@@ -148,14 +150,12 @@ fun AppNavGraph(
         }
 
         composable(Destination.Settings.route) {
-            // TODO: Implement SettingsScreen (Fase 7)
-            HomeScreen(
-                viewModel = viewModel(
-                    factory = HomeViewModel.provideFactory(budgetRepository)
-                ),
-                onNavigateToBudgetList = {},
-                onNavigateToCreateBudget = {},
-                onNavigateToSettings = {}
+            val settingsViewModel: SettingsViewModel = viewModel(
+                factory = SettingsViewModel.provideFactory(settingsRepository)
+            )
+            SettingsScreen(
+                viewModel = settingsViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }
