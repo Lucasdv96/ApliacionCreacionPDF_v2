@@ -12,14 +12,17 @@ import com.example.myapplication.data.repository.ClientRepository
 import com.example.myapplication.presentation.ui.screen.AddItemScreen
 import com.example.myapplication.presentation.ui.screen.BudgetDetailScreen
 import com.example.myapplication.presentation.ui.screen.BudgetListScreen
+import com.example.myapplication.presentation.ui.screen.ClientListScreen
 import com.example.myapplication.presentation.ui.screen.CreateBudgetScreen
+import com.example.myapplication.presentation.ui.screen.EditClientScreen
 import com.example.myapplication.presentation.ui.screen.HomeScreen
 import com.example.myapplication.presentation.ui.screen.SettingsScreen
 import com.example.myapplication.presentation.viewmodel.AddItemViewModel
 import com.example.myapplication.presentation.viewmodel.BudgetDetailViewModel
 import com.example.myapplication.presentation.viewmodel.BudgetListViewModel
+import com.example.myapplication.presentation.viewmodel.ClientListViewModel
 import com.example.myapplication.presentation.viewmodel.CreateBudgetViewModel
-import com.example.myapplication.presentation.viewmodel.HomeViewModel
+import com.example.myapplication.presentation.viewmodel.EditClientViewModel
 import com.example.myapplication.presentation.viewmodel.SettingsViewModel
 
 sealed class Destination(val route: String) {
@@ -35,6 +38,7 @@ sealed class Destination(val route: String) {
     data object EditItem : Destination("edit_item/{budgetId}/{itemId}") {
         fun createRoute(budgetId: Int, itemId: Int) = "edit_item/$budgetId/$itemId"
     }
+    data object ClientList : Destination("client_list")
     data object Settings : Destination("settings")
 }
 
@@ -54,23 +58,11 @@ fun AppNavGraph(
         startDestination = startDestination
     ) {
         composable(Destination.Home.route) {
-            val viewModel: HomeViewModel = viewModel(
-                factory = HomeViewModel.provideFactory(budgetRepository)
-            )
             HomeScreen(
-                viewModel = viewModel,
-                onNavigateToBudgetList = {
-                    navController.navigate(Destination.BudgetList.route)
-                },
-                onNavigateToCreateBudget = {
-                    navController.navigate(Destination.CreateBudget.route)
-                },
-                onNavigateToSettings = {
-                    navController.navigate(Destination.Settings.route)
-                },
-                onNavigateToBudgetDetail = { budgetId ->
-                    navController.navigate(Destination.BudgetDetail.createRoute(budgetId))
-                }
+                onNavigateToCreateBudget = { navController.navigate(Destination.CreateBudget.route) },
+                onNavigateToClients = { navController.navigate(Destination.ClientList.route) },
+                onNavigateToBudgetList = { navController.navigate(Destination.BudgetList.route) },
+                onNavigateToSettings = { navController.navigate(Destination.Settings.route) }
             )
         }
 
@@ -80,15 +72,11 @@ fun AppNavGraph(
             )
             BudgetListScreen(
                 viewModel = viewModel,
-                onNavigateToCreateBudget = {
-                    navController.navigate(Destination.CreateBudget.route)
-                },
+                onNavigateToCreateBudget = { navController.navigate(Destination.CreateBudget.route) },
                 onNavigateToBudgetDetail = { budgetId ->
                     navController.navigate(Destination.BudgetDetail.createRoute(budgetId))
                 },
-                onNavigateToHome = {
-                    navController.navigate(Destination.Home.route)
-                }
+                onNavigateToHome = { navController.popBackStack() }
             )
         }
 
@@ -98,9 +86,7 @@ fun AppNavGraph(
             )
             CreateBudgetScreen(
                 viewModel = viewModel,
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
+                onNavigateBack = { navController.popBackStack() },
                 onBudgetCreated = { budgetId ->
                     navController.navigate(Destination.BudgetDetail.createRoute(budgetId)) {
                         popUpTo(Destination.CreateBudget.route) { inclusive = true }
@@ -124,18 +110,14 @@ fun AppNavGraph(
             )
             BudgetDetailScreen(
                 viewModel = viewModel,
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
+                onNavigateBack = { navController.popBackStack() },
                 onNavigateToAddItem = { bId ->
                     navController.navigate(Destination.AddItem.createRoute(bId))
                 },
                 onNavigateToEditItem = { bId, itemId ->
                     navController.navigate(Destination.EditItem.createRoute(bId, itemId))
                 },
-                onBudgetDeleted = {
-                    navController.popBackStack()
-                }
+                onBudgetDeleted = { navController.popBackStack() }
             )
         }
 
@@ -161,6 +143,30 @@ fun AppNavGraph(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onItemAdded = { navController.popBackStack() }
+            )
+        }
+
+        composable(Destination.ClientList.route) {
+            val viewModel: ClientListViewModel = viewModel(
+                factory = ClientListViewModel.provideFactory(clientRepository)
+            )
+            ClientListScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToEditClient = { clientId ->
+                    navController.navigate("edit_client/$clientId")
+                }
+            )
+        }
+
+        composable("edit_client/{clientId}") { backStackEntry ->
+            val clientId = backStackEntry.arguments?.getString("clientId")?.toIntOrNull() ?: 0
+            val viewModel: EditClientViewModel = viewModel(
+                factory = EditClientViewModel.provideFactory(clientRepository, clientId)
+            )
+            EditClientScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
