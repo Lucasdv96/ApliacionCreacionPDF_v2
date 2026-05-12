@@ -117,6 +117,9 @@ fun AppNavGraph(
                 onNavigateToEditItem = { bId, itemId ->
                     navController.navigate(Destination.EditItem.createRoute(bId, itemId))
                 },
+                onNavigateToDuplicatedBudget = { newBudgetId ->
+                    navController.navigate(Destination.BudgetDetail.createRoute(newBudgetId))
+                },
                 onBudgetDeleted = { navController.popBackStack() }
             )
         }

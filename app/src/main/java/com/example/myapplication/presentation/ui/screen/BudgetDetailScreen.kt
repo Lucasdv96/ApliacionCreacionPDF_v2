@@ -56,11 +56,17 @@ fun BudgetDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAddItem: (budgetId: Int) -> Unit,
     onNavigateToEditItem: (budgetId: Int, itemId: Int) -> Unit,
+    onNavigateToDuplicatedBudget: (budgetId: Int) -> Unit,
     onBudgetDeleted: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     @Suppress("OPT_IN_USAGE")
     val clientSuggestions by viewModel.clientSuggestions.collectAsState()
+
+    if (uiState.duplicatedBudgetId != null) {
+        viewModel.clearDuplicatedBudgetId()
+        onNavigateToDuplicatedBudget(uiState.duplicatedBudgetId!!)
+    }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showStatusMenu by remember { mutableStateOf(false) }
     var showClientDropdown by remember { mutableStateOf(false) }
@@ -298,6 +304,11 @@ fun BudgetDetailScreen(
                             }
                             Text("Compartir")
                         }
+                        Button(
+                            onClick = viewModel::duplicateBudget,
+                            modifier = Modifier.weight(1f).padding(4.dp),
+                            enabled = !uiState.isSaving
+                        ) { Text("Duplicar") }
                         Button(onClick = { showDeleteConfirm = true }, modifier = Modifier.weight(1f).padding(4.dp), enabled = !uiState.isSaving) { Text("Eliminar") }
                         Button(onClick = onNavigateBack, modifier = Modifier.weight(1f).padding(4.dp), enabled = !uiState.isSaving) { Text("Volver") }
                     }

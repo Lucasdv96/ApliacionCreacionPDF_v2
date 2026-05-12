@@ -30,6 +30,7 @@ data class BudgetDetailUiState(
     val pdfPath: String? = null,
     val showShareOptions: Boolean = false,
     val lastGeneratedPdfPath: String? = null,
+    val duplicatedBudgetId: Int? = null,
     val editProjectName: String = "",
     val editLaborCost: String = "",
     val editClientName: String = "",
@@ -391,6 +392,35 @@ class BudgetDetailViewModel(
         _uiState.value = _uiState.value.copy(showShareOptions = false)
     }
 
+    fun duplicateBudget() {
+        val budget = _uiState.value.budget ?: return
+        val items = _uiState.value.items
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isSaving = true, error = null)
+                val newNumber = budgetRepository.generateBudgetNumber(budget.project)
+                val newBudget = budget.copy(
+                    id = 0,
+                    budgetNumber = newNumber,
+                    status = "DRAFT",
+                    createdDate = System.currentTimeMillis(),
+                    modifiedDate = System.currentTimeMillis()
+                )
+                val newBudgetId = budgetRepository.createBudget(newBudget).toInt()
+                items.forEach { item ->
+                    budgetItemRepository.createItem(item.copy(id = 0, budgetId = newBudgetId))
+                }
+                _uiState.value = _uiState.value.copy(isSaving = false, duplicatedBudgetId = newBudgetId)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    error = "Error al duplicar: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun clearDuplicatedBudgetId() { _uiState.value = _uiState.value.copy(duplicatedBudgetId = null) }
     fun dismissShareOptions() { _uiState.value = _uiState.value.copy(showShareOptions = false) }
     fun clearPdfPath() { _uiState.value = _uiState.value.copy(pdfPath = null) }
     fun clearError() { _uiState.value = _uiState.value.copy(error = null) }
