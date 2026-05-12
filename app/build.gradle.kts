@@ -1,14 +1,14 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    kotlin("kapt")
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
     namespace = "com.example.myapplication"
     compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
+        version = release(36)
     }
 
     defaultConfig {
@@ -37,6 +37,10 @@ android {
     buildFeatures {
         compose = true
     }
+    buildToolsVersion = "36.0.0"
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
 
 dependencies {
@@ -48,6 +52,28 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+
+    // Material Icons
+    implementation("androidx.compose.material:material-icons-extended:1.6.3")
+
+    // Room Database
+    implementation("androidx.room:room-runtime:2.7.0")
+    implementation("androidx.room:room-ktx:2.7.0")
+    kapt("androidx.room:room-compiler:2.7.0")
+
+    // Navigation Compose
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    // Lifecycle
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+
+    // Kotlinx Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation(libs.core.ktx)
+
+    // iText for PDF Generation
+    implementation("com.itextpdf:itext-core:8.0.3")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
