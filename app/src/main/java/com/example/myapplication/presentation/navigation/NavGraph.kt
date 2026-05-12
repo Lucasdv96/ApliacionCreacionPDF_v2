@@ -32,6 +32,9 @@ sealed class Destination(val route: String) {
     data object AddItem : Destination("add_item/{budgetId}") {
         fun createRoute(budgetId: Int) = "add_item/$budgetId"
     }
+    data object EditItem : Destination("edit_item/{budgetId}/{itemId}") {
+        fun createRoute(budgetId: Int, itemId: Int) = "edit_item/$budgetId/$itemId"
+    }
     data object Settings : Destination("settings")
 }
 
@@ -127,6 +130,9 @@ fun AppNavGraph(
                 onNavigateToAddItem = { bId ->
                     navController.navigate(Destination.AddItem.createRoute(bId))
                 },
+                onNavigateToEditItem = { bId, itemId ->
+                    navController.navigate(Destination.EditItem.createRoute(bId, itemId))
+                },
                 onBudgetDeleted = {
                     navController.popBackStack()
                 }
@@ -140,12 +146,21 @@ fun AppNavGraph(
             )
             AddItemScreen(
                 viewModel = viewModel,
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
-                onItemAdded = {
-                    navController.popBackStack()
-                }
+                onNavigateBack = { navController.popBackStack() },
+                onItemAdded = { navController.popBackStack() }
+            )
+        }
+
+        composable(Destination.EditItem.route) { backStackEntry ->
+            val budgetId = backStackEntry.arguments?.getString("budgetId")?.toIntOrNull() ?: 0
+            val itemId = backStackEntry.arguments?.getString("itemId")?.toIntOrNull() ?: 0
+            val viewModel: AddItemViewModel = viewModel(
+                factory = AddItemViewModel.provideFactory(budgetItemRepository, budgetId, itemId)
+            )
+            AddItemScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onItemAdded = { navController.popBackStack() }
             )
         }
 

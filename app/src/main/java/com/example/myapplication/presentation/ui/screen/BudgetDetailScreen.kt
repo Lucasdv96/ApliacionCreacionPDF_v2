@@ -55,6 +55,7 @@ fun BudgetDetailScreen(
     viewModel: BudgetDetailViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToAddItem: (budgetId: Int) -> Unit,
+    onNavigateToEditItem: (budgetId: Int, itemId: Int) -> Unit,
     onBudgetDeleted: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -215,7 +216,11 @@ fun BudgetDetailScreen(
                     } else {
                         Column(modifier = Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             uiState.items.forEach { item ->
-                                BudgetItemCard(item = item, onDelete = { viewModel.deleteItem(item) })
+                                BudgetItemCard(
+                                    item = item,
+                                    onEdit = { onNavigateToEditItem(budget.id, item.id) },
+                                    onDelete = { viewModel.deleteItem(item) }
+                                )
                             }
                         }
                     }
@@ -346,6 +351,7 @@ fun BudgetDetailScreen(
 @Composable
 fun BudgetItemCard(
     item: BudgetItemEntity,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     val itemTypeDisplay = when (item.type) {
@@ -370,6 +376,7 @@ fun BudgetItemCard(
                 Text("Subtotal: \$${String.format("%.2f", subtotal)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 if (item.laborCost > 0) Text("M.O.: \$${String.format("%.2f", item.laborCost)}", fontSize = 12.sp)
             }
+            IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, contentDescription = "Editar") }
             IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = "Eliminar") }
         }
         androidx.compose.material3.Divider()

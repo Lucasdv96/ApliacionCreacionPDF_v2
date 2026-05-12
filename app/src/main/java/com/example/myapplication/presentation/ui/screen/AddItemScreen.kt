@@ -50,7 +50,7 @@ fun AddItemScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Agregar Item") },
+                title = { Text(if (uiState.isEditMode) "Editar Item" else "Agregar Item") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
@@ -218,7 +218,7 @@ fun AddItemScreen(
                                 .align(Alignment.CenterVertically)
                         )
                     }
-                    Text("Guardar Item")
+                    Text(if (uiState.isEditMode) "Guardar Cambios" else "Guardar Item")
                 }
             }
         }
