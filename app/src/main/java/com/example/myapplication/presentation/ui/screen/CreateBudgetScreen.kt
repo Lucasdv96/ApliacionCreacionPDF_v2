@@ -48,6 +48,7 @@ fun CreateBudgetScreen(
     val uiState by viewModel.uiState.collectAsState()
     val clientSuggestions by viewModel.clientSuggestions.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showClientDropdown by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
     if (uiState.savedBudgetId != null) {
         onBudgetCreated(uiState.savedBudgetId!!)
@@ -80,13 +81,16 @@ fun CreateBudgetScreen(
                 FormTextField(
                     label = "Nombre del Cliente *",
                     value = uiState.clientName,
-                    onValueChange = viewModel::updateClientName,
+                    onValueChange = {
+                        viewModel.updateClientName(it)
+                        showClientDropdown = true
+                    },
                     error = uiState.validationErrors["clientName"],
                     enabled = !uiState.isSaving
                 )
                 DropdownMenu(
-                    expanded = clientSuggestions.isNotEmpty() && !uiState.isExistingClientSelected,
-                    onDismissRequest = {}
+                    expanded = showClientDropdown && clientSuggestions.isNotEmpty() && !uiState.isExistingClientSelected,
+                    onDismissRequest = { showClientDropdown = false }
                 ) {
                     clientSuggestions.take(5).forEach { client ->
                         DropdownMenuItem(
@@ -101,7 +105,10 @@ fun CreateBudgetScreen(
                                     }
                                 }
                             },
-                            onClick = { viewModel.selectExistingClient(client) }
+                            onClick = {
+                                viewModel.selectExistingClient(client)
+                                showClientDropdown = false
+                            }
                         )
                     }
                 }
