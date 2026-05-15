@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -138,21 +137,6 @@ fun BudgetListScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                StatusFilterButton("Todos", null, uiState.selectedStatus, viewModel::setStatusFilter)
-                StatusFilterButton("Borrador", "DRAFT", uiState.selectedStatus, viewModel::setStatusFilter)
-                StatusFilterButton("Enviado", "SENT", uiState.selectedStatus, viewModel::setStatusFilter)
-                StatusFilterButton("Aceptado", "ACCEPTED", uiState.selectedStatus, viewModel::setStatusFilter)
-                StatusFilterButton("Rechazado", "REJECTED", uiState.selectedStatus, viewModel::setStatusFilter)
-                StatusFilterButton("Completado", "COMPLETED", uiState.selectedStatus, viewModel::setStatusFilter)
-            }
-
             DateFilterRow(
                 dateFrom = uiState.dateFrom,
                 onDateRangeSelected = { from, to -> viewModel.setDateRange(from, to) }
@@ -216,23 +200,10 @@ fun BudgetListScreen(
     }
 }
 
-@Composable
-private fun StatusFilterButton(
-    label: String,
-    status: String?,
-    selectedStatus: String?,
-    onClick: (String?) -> Unit
-) {
-    val isSelected = selectedStatus == status
-    if (isSelected) {
-        Button(onClick = { onClick(status) }) {
-            Text(label, fontSize = 12.sp)
-        }
-    } else {
-        OutlinedButton(onClick = { onClick(status) }) {
-            Text(label, fontSize = 12.sp)
-        }
-    }
+private fun extractSequence(budgetNumber: String): String {
+    val parts = budgetNumber.split("-")
+    val last = parts.lastOrNull() ?: budgetNumber
+    return last.toIntOrNull()?.toString()?.padStart(3, '0') ?: last.padStart(3, '0')
 }
 
 @Composable
@@ -317,28 +288,31 @@ fun BudgetItemCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = budget.budgetNumber,
+                        text = budget.project,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = budget.project,
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(top = 4.dp)
                     )
                     Text(
                         text = dateFormat.format(Date(budget.createdDate)),
                         fontSize = 12.sp,
                         modifier = Modifier.padding(top = 4.dp)
                     )
+                    Row(
+                        modifier = Modifier.padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "N° Presupuesto",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "  ${extractSequence(budget.budgetNumber)}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
-
-                Text(
-                    text = budget.status,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
             }
 
             Row(
