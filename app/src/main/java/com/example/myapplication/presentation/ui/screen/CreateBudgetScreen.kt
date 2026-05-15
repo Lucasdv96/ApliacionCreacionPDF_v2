@@ -79,7 +79,7 @@ fun CreateBudgetScreen(
         ) {
             SectionTitle("DATOS DEL CLIENTE")
 
-            Box(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 FormTextField(
                     label = "Nombre del Cliente *",
                     value = uiState.clientName,
@@ -90,28 +90,31 @@ fun CreateBudgetScreen(
                     error = uiState.validationErrors["clientName"],
                     enabled = !uiState.isSaving
                 )
-                DropdownMenu(
-                    expanded = showClientDropdown && clientSuggestions.isNotEmpty() && !uiState.isExistingClientSelected,
-                    onDismissRequest = { showClientDropdown = false }
-                ) {
-                    clientSuggestions.take(5).forEach { client ->
-                        DropdownMenuItem(
-                            text = {
-                                Column {
-                                    Text(client.name, fontWeight = FontWeight.Medium)
-                                    val location = listOf(client.city, client.province)
-                                        .filter { it.isNotBlank() }
-                                        .joinToString(", ")
-                                    if (location.isNotBlank()) {
-                                        Text(location, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (showClientDropdown && clientSuggestions.isNotEmpty() && !uiState.isExistingClientSelected) {
+                    androidx.compose.material3.Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        clientSuggestions.take(5).forEach { client ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(client.name, fontWeight = FontWeight.Medium)
+                                        val location = listOf(client.city, client.province)
+                                            .filter { it.isNotBlank() }
+                                            .joinToString(", ")
+                                        if (location.isNotBlank()) {
+                                            Text(location, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                     }
+                                },
+                                onClick = {
+                                    viewModel.selectExistingClient(client)
+                                    showClientDropdown = false
                                 }
-                            },
-                            onClick = {
-                                viewModel.selectExistingClient(client)
-                                showClientDropdown = false
-                            }
-                        )
+                            )
+                            androidx.compose.material3.Divider()
+                        }
                     }
                 }
             }

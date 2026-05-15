@@ -135,7 +135,7 @@ fun BudgetDetailScreen(
                 ) {
                     SectionTitle("👤 CLIENTE")
                     if (uiState.isEditing) {
-                        Box(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
                             OutlinedTextField(
                                 value = uiState.editClientName,
                                 onValueChange = {
@@ -146,28 +146,31 @@ fun BudgetDetailScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true
                             )
-                            DropdownMenu(
-                                expanded = showClientDropdown && clientSuggestions.isNotEmpty(),
-                                onDismissRequest = { showClientDropdown = false }
-                            ) {
-                                clientSuggestions.take(5).forEach { client ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Column {
-                                                Text(client.name, fontWeight = FontWeight.Medium)
-                                                val location = listOf(client.city, client.province)
-                                                    .filter { it.isNotBlank() }.joinToString(", ")
-                                                if (location.isNotBlank()) {
-                                                    Text(location, fontSize = 11.sp,
-                                                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (showClientDropdown && clientSuggestions.isNotEmpty()) {
+                                androidx.compose.material3.Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 4.dp)
+                                ) {
+                                    clientSuggestions.take(5).forEach { client ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Column {
+                                                    Text(client.name, fontWeight = FontWeight.Medium)
+                                                    val location = listOf(client.city, client.province)
+                                                        .filter { it.isNotBlank() }.joinToString(", ")
+                                                    if (location.isNotBlank()) {
+                                                        Text(location, fontSize = 11.sp,
+                                                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    }
                                                 }
+                                            },
+                                            onClick = {
+                                                viewModel.selectClientSuggestion(client)
+                                                showClientDropdown = false
                                             }
-                                        },
-                                        onClick = {
-                                            viewModel.selectClientSuggestion(client)
-                                            showClientDropdown = false
-                                        }
-                                    )
+                                        )
+                                        androidx.compose.material3.Divider()
+                                    }
                                 }
                             }
                         }
