@@ -195,7 +195,6 @@ fun BudgetDetailScreen(
                     SectionTitle("📁 PROYECTO")
                     if (uiState.isEditing) {
                         OutlinedTextField(value = uiState.editProjectName, onValueChange = viewModel::updateEditProjectName, label = { Text("Nombre del proyecto") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-                        OutlinedTextField(value = uiState.editLaborCost, onValueChange = viewModel::updateEditLaborCost, label = { Text("Mano de obra") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                     } else {
                         Text(text = "Proyecto: ${budget.project}", fontSize = 14.sp)
                         Text(text = "Creado: ${dateFormat.format(Date(budget.createdDate))}", fontSize = 12.sp)
