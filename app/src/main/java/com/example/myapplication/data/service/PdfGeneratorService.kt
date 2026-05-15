@@ -5,12 +5,14 @@ import com.example.myapplication.data.db.entity.BudgetEntity
 import com.example.myapplication.data.db.entity.BudgetItemEntity
 import com.example.myapplication.utils.formatCurrency
 import com.example.myapplication.data.db.entity.SettingsEntity
+import com.itextpdf.io.image.ImageDataFactory
 import com.itextpdf.kernel.colors.ColorConstants
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
 import com.itextpdf.layout.Document
 import com.itextpdf.layout.borders.SolidBorder
 import com.itextpdf.layout.element.Cell
+import com.itextpdf.layout.element.Image
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
 import com.itextpdf.layout.properties.TextAlignment
@@ -77,9 +79,18 @@ class PdfGeneratorService(private val context: Context) {
         headerTable.addCell(
             Cell().add(Paragraph(companyInfo.toString()).setBold().setFontSize(12f)).setBorder(null)
         )
-        headerTable.addCell(
-            Cell().add(Paragraph("LOGO").setTextAlignment(TextAlignment.RIGHT).setFontColor(ColorConstants.LIGHT_GRAY)).setBorder(null)
-        )
+
+        val logoFile = if (settings.logoPath.isNotEmpty()) File(settings.logoPath) else null
+        if (logoFile != null && logoFile.exists()) {
+            val imageData = ImageDataFactory.create(logoFile.absolutePath)
+            val image = Image(imageData).setMaxHeight(60f).setAutoScale(false)
+            headerTable.addCell(
+                Cell().add(image).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
+            )
+        } else {
+            headerTable.addCell(Cell().setBorder(null))
+        }
+
         document.add(headerTable)
     }
 

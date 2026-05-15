@@ -18,6 +18,7 @@ data class SettingsUiState(
     val companyEmail: String = "",
     val companyCity: String = "",
     val termsConditions: String = "",
+    val logoPath: String = "",
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
     val error: String? = null
@@ -46,7 +47,8 @@ class SettingsViewModel(
                         companyPhone = settings.companyPhone,
                         companyEmail = settings.companyEmail,
                         companyCity = settings.companyCity,
-                        termsConditions = settings.termsConditions
+                        termsConditions = settings.termsConditions,
+                        logoPath = settings.logoPath
                     )
                 }
             } catch (e: Exception) {
@@ -62,6 +64,7 @@ class SettingsViewModel(
     fun updateCompanyEmail(value: String) { _uiState.value = _uiState.value.copy(companyEmail = value, isSaved = false) }
     fun updateCompanyCity(value: String) { _uiState.value = _uiState.value.copy(companyCity = value, isSaved = false) }
     fun updateTermsConditions(value: String) { _uiState.value = _uiState.value.copy(termsConditions = value, isSaved = false) }
+    fun updateLogoPath(path: String) { _uiState.value = _uiState.value.copy(logoPath = path, isSaved = false) }
 
     fun saveSettings() {
         val s = _uiState.value
@@ -76,15 +79,13 @@ class SettingsViewModel(
                     companyPhone = s.companyPhone,
                     companyEmail = s.companyEmail,
                     companyCity = s.companyCity,
-                    termsConditions = s.termsConditions
+                    termsConditions = s.termsConditions,
+                    logoPath = s.logoPath
                 )
                 settingsRepository.updateSettings(settings)
                 _uiState.value = _uiState.value.copy(isSaving = false, isSaved = true, error = null)
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isSaving = false,
-                    error = "Error al guardar: ${e.message}"
-                )
+                _uiState.value = _uiState.value.copy(isSaving = false, error = "Error al guardar: ${e.message}")
             }
         }
     }
