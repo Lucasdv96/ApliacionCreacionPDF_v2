@@ -157,16 +157,6 @@ fun AddItemScreen(
                 )
             }
 
-            if (uiState.type != "LABOR") {
-                SectionTitle("MANO DE OBRA")
-                FormTextField(
-                    label = "Costo de Mano de Obra (opcional)",
-                    value = uiState.laborCost.toInputString(),
-                    onValueChange = { viewModel.updateLaborCost(parseAmount(it)) },
-                    enabled = !uiState.isSaving
-                )
-            }
-
             SectionTitle("NOTAS")
 
             FormTextField(

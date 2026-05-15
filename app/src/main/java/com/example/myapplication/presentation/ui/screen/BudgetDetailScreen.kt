@@ -71,7 +71,6 @@ fun BudgetDetailScreen(
         onNavigateToDuplicatedBudget(uiState.duplicatedBudgetId!!)
     }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    var showStatusMenu by remember { mutableStateOf(false) }
     var showClientDropdown by remember { mutableStateOf(false) }
     var showLaborDialog by remember { mutableStateOf(false) }
     var laborCostInput by remember { mutableStateOf("") }
@@ -199,26 +198,6 @@ fun BudgetDetailScreen(
                         Text(text = "Creado: ${dateFormat.format(Date(budget.createdDate))}", fontSize = 12.sp)
                     }
 
-                    SectionTitle("📋 ESTADO")
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Estado:", modifier = Modifier.weight(0.3f))
-                        Button(onClick = { showStatusMenu = true }, modifier = Modifier.weight(0.7f)) {
-                            Text(budget.status)
-                            DropdownMenu(expanded = showStatusMenu, onDismissRequest = { showStatusMenu = false }) {
-                                listOf("DRAFT", "SENT", "ACCEPTED", "REJECTED", "COMPLETED").forEach { status ->
-                                    DropdownMenuItem(
-                                        text = { Text(status) },
-                                        onClick = { viewModel.updateBudgetStatus(status); showStatusMenu = false }
-                                    )
-                                }
-                            }
-                        }
-                    }
-
                     SectionTitle("🛠️ ITEMS (${uiState.items.size})")
                     if (uiState.items.isEmpty()) {
                         Text(text = "Sin items agregados", fontSize = 12.sp, modifier = Modifier.padding(8.dp))
@@ -259,10 +238,6 @@ fun BudgetDetailScreen(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Items:", fontWeight = FontWeight.Bold)
                         Text(formatCurrency(viewModel.getItemsTotal()))
-                    }
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Mano de obra (items):", fontWeight = FontWeight.Bold)
-                        Text(formatCurrency(viewModel.getLaborTotal()))
                     }
                     if (budget.laborCostPerItem > 0) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
