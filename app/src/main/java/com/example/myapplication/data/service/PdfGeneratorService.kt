@@ -83,7 +83,7 @@ class PdfGeneratorService(private val context: Context) {
         val logoFile = if (settings.logoPath.isNotEmpty()) File(settings.logoPath) else null
         if (logoFile != null && logoFile.exists()) {
             val imageData = ImageDataFactory.create(logoFile.absolutePath)
-            val image = Image(imageData).setMaxHeight(100f).setMaxWidth(150f).setAutoScale(false)
+            val image = Image(imageData).setMaxHeight(140f).setMaxWidth(200f).setAutoScale(false)
             headerTable.addCell(
                 Cell().add(image).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
             )
