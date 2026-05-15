@@ -30,7 +30,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -48,7 +50,7 @@ fun CreateBudgetScreen(
     val uiState by viewModel.uiState.collectAsState()
     val clientSuggestions by viewModel.clientSuggestions.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showClientDropdown by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var showClientDropdown by remember { mutableStateOf(false) }
 
     if (uiState.savedBudgetId != null) {
         onBudgetCreated(uiState.savedBudgetId!!)
