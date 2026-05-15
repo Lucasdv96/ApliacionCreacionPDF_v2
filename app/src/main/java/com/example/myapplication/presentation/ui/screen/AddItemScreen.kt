@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.example.myapplication.utils.formatCurrency
+import com.example.myapplication.utils.parseAmount
 import com.example.myapplication.utils.toInputString
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -144,10 +145,7 @@ fun AddItemScreen(
             FormTextField(
                 label = "Precio Unitario",
                 value = uiState.unitPrice.toInputString(),
-                onValueChange = { value ->
-                    val doubleValue = value.toDoubleOrNull() ?: 0.0
-                    viewModel.updateUnitPrice(doubleValue)
-                },
+                onValueChange = { viewModel.updateUnitPrice(parseAmount(it)) },
                 enabled = !uiState.isSaving
             )
 
@@ -164,10 +162,7 @@ fun AddItemScreen(
                 FormTextField(
                     label = "Costo de Mano de Obra (opcional)",
                     value = uiState.laborCost.toInputString(),
-                    onValueChange = { value ->
-                        val doubleValue = value.toDoubleOrNull() ?: 0.0
-                        viewModel.updateLaborCost(doubleValue)
-                    },
+                    onValueChange = { viewModel.updateLaborCost(parseAmount(it)) },
                     enabled = !uiState.isSaving
                 )
             }

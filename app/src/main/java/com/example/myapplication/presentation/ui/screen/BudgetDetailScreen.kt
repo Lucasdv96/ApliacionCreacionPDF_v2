@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import com.example.myapplication.utils.formatCurrency
+import com.example.myapplication.utils.parseAmount
 import com.example.myapplication.utils.toInputString
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -341,7 +342,7 @@ fun BudgetDetailScreen(
             },
             confirmButton = {
                 Button(onClick = {
-                    viewModel.saveLaborCost(laborCostInput.toDoubleOrNull() ?: 0.0)
+                    viewModel.saveLaborCost(parseAmount(laborCostInput))
                     showLaborDialog = false
                 }) { Text("Guardar") }
             },
