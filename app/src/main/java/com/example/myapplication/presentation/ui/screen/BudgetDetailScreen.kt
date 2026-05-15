@@ -3,6 +3,8 @@ package com.example.myapplication.presentation.ui.screen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import com.example.myapplication.utils.formatCurrency
+import com.example.myapplication.utils.toInputString
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -239,14 +241,14 @@ fun BudgetDetailScreen(
                     OutlinedButton(
                         onClick = {
                             laborCostInput = if (budget.laborCostPerItem > 0)
-                                budget.laborCostPerItem.toString() else ""
+                                budget.laborCostPerItem.toInputString() else ""
                             showLaborDialog = true
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             if (budget.laborCostPerItem > 0)
-                                "Mano de obra: \$${String.format("%.2f", budget.laborCostPerItem)}"
+                                "Mano de obra: ${formatCurrency(budget.laborCostPerItem)}"
                             else
                                 "+ Agregar mano de obra"
                         )
@@ -255,22 +257,22 @@ fun BudgetDetailScreen(
                     SectionTitle("💰 RESUMEN")
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Items:", fontWeight = FontWeight.Bold)
-                        Text("\$${String.format("%.2f", viewModel.getItemsTotal())}")
+                        Text(formatCurrency(viewModel.getItemsTotal()))
                     }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Mano de obra (items):", fontWeight = FontWeight.Bold)
-                        Text("\$${String.format("%.2f", viewModel.getLaborTotal())}")
+                        Text(formatCurrency(viewModel.getLaborTotal()))
                     }
                     if (budget.laborCostPerItem > 0) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Mano de obra:", fontWeight = FontWeight.Bold)
-                            Text("\$${String.format("%.2f", budget.laborCostPerItem)}")
+                            Text(formatCurrency(budget.laborCostPerItem))
                         }
                     }
                     androidx.compose.material3.Divider(modifier = Modifier.padding(vertical = 8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("TOTAL:", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("\$${String.format("%.2f", viewModel.getGrandTotal())}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(formatCurrency(viewModel.getGrandTotal()), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
 
                     SectionTitle("📝 NOTAS")
@@ -383,9 +385,9 @@ fun BudgetItemCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(itemTypeDisplay, fontWeight = FontWeight.Bold)
                 if (item.description.isNotEmpty()) Text(item.description, fontSize = 12.sp)
-                Text("Cant: ${item.quantity} x \$${String.format("%.2f", item.unitPrice)}", fontSize = 12.sp)
-                Text("Subtotal: \$${String.format("%.2f", subtotal)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                if (item.laborCost > 0) Text("M.O.: \$${String.format("%.2f", item.laborCost)}", fontSize = 12.sp)
+                Text("Cant: ${item.quantity} x ${formatCurrency(item.unitPrice)}", fontSize = 12.sp)
+                Text("Subtotal: ${formatCurrency(subtotal)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                if (item.laborCost > 0) Text("M.O.: ${formatCurrency(item.laborCost)}", fontSize = 12.sp)
             }
             IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, contentDescription = "Editar") }
             IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = "Eliminar") }

@@ -3,6 +3,7 @@ package com.example.myapplication.data.service
 import android.content.Context
 import com.example.myapplication.data.db.entity.BudgetEntity
 import com.example.myapplication.data.db.entity.BudgetItemEntity
+import com.example.myapplication.utils.formatCurrency
 import com.example.myapplication.data.db.entity.SettingsEntity
 import com.itextpdf.io.font.PdfEncodings
 import com.itextpdf.kernel.colors.ColorConstants
@@ -170,9 +171,9 @@ class PdfGeneratorService(private val context: Context) {
             table.addCell(Cell().add(Paragraph(itemType)))
             table.addCell(Cell().add(Paragraph(item.description)))
             table.addCell(Cell().add(Paragraph(item.quantity.toString())).setTextAlignment(TextAlignment.CENTER))
-            table.addCell(Cell().add(Paragraph("\$${String.format("%.2f", item.unitPrice)}")).setTextAlignment(TextAlignment.RIGHT))
-            table.addCell(Cell().add(Paragraph("\$${String.format("%.2f", item.laborCost)}")).setTextAlignment(TextAlignment.RIGHT))
-            table.addCell(Cell().add(Paragraph("\$${String.format("%.2f", subtotal)}")).setTextAlignment(TextAlignment.RIGHT))
+            table.addCell(Cell().add(Paragraph("${formatCurrency(item.unitPrice)}")).setTextAlignment(TextAlignment.RIGHT))
+            table.addCell(Cell().add(Paragraph("${formatCurrency(item.laborCost)}")).setTextAlignment(TextAlignment.RIGHT))
+            table.addCell(Cell().add(Paragraph("${formatCurrency(subtotal)}")).setTextAlignment(TextAlignment.RIGHT))
         }
 
         document.add(table)
@@ -189,20 +190,20 @@ class PdfGeneratorService(private val context: Context) {
         // Items
         var cell = Cell().add(Paragraph("Subtotal Items:")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
         summaryTable.addCell(cell)
-        cell = Cell().add(Paragraph("\$${String.format("%.2f", itemsTotal)}")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
+        cell = Cell().add(Paragraph("${formatCurrency(itemsTotal)}")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
         summaryTable.addCell(cell)
 
         // Labor items
         cell = Cell().add(Paragraph("Mano de obra (items):")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
         summaryTable.addCell(cell)
-        cell = Cell().add(Paragraph("\$${String.format("%.2f", laborTotal)}")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
+        cell = Cell().add(Paragraph("${formatCurrency(laborTotal)}")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
         summaryTable.addCell(cell)
 
         // Labor presupuesto
         if (budget.laborCostPerItem > 0) {
             cell = Cell().add(Paragraph("Mano de obra (presupuesto):")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
             summaryTable.addCell(cell)
-            cell = Cell().add(Paragraph("\$${String.format("%.2f", budget.laborCostPerItem)}")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
+            cell = Cell().add(Paragraph("${formatCurrency(budget.laborCostPerItem)}")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
             summaryTable.addCell(cell)
         }
 
@@ -210,7 +211,7 @@ class PdfGeneratorService(private val context: Context) {
         cell = Cell().add(Paragraph("TOTAL:").setBold().setFontSize(14f)).setTextAlignment(TextAlignment.RIGHT)
             .setBorder(SolidBorder(1f))
         summaryTable.addCell(cell)
-        cell = Cell().add(Paragraph("\$${String.format("%.2f", grandTotal)}").setBold().setFontSize(14f)).setTextAlignment(TextAlignment.RIGHT)
+        cell = Cell().add(Paragraph("${formatCurrency(grandTotal)}").setBold().setFontSize(14f)).setTextAlignment(TextAlignment.RIGHT)
             .setBorder(SolidBorder(1f))
         summaryTable.addCell(cell)
 
