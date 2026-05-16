@@ -73,7 +73,7 @@ fun BudgetListScreen(
                 title = { Text("Mis Presupuestos") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateToHome) {
-                        Text("←", fontSize = 20.sp)
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
                 actions = {
