@@ -271,26 +271,32 @@ fun BudgetDetailScreen(
                         )
                     }
 
-                    Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Button(
                             onClick = viewModel::generateAndShare,
-                            modifier = Modifier.weight(1f).padding(4.dp),
+                            modifier = Modifier.weight(1f),
                             enabled = !uiState.isSaving && !uiState.isGeneratingPdf
                         ) {
                             if (uiState.isGeneratingPdf) {
-                                CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
+                                CircularProgressIndicator(modifier = Modifier.padding(end = 4.dp), strokeWidth = 2.dp)
                             } else {
                                 Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
                             }
                             Text("Compartir")
                         }
                         Button(
-                            onClick = viewModel::duplicateBudget,
-                            modifier = Modifier.weight(1f).padding(4.dp),
+                            onClick = { showDeleteConfirm = true },
+                            modifier = Modifier.weight(1f),
                             enabled = !uiState.isSaving
-                        ) { Text("Duplicar") }
-                        Button(onClick = { showDeleteConfirm = true }, modifier = Modifier.weight(1f).padding(4.dp), enabled = !uiState.isSaving) { Text("Eliminar") }
-                        Button(onClick = onNavigateBack, modifier = Modifier.weight(1f).padding(4.dp), enabled = !uiState.isSaving) { Text("Volver") }
+                        ) { Text("Eliminar") }
+                        Button(
+                            onClick = onNavigateBack,
+                            modifier = Modifier.weight(1f),
+                            enabled = !uiState.isSaving
+                        ) { Text("Volver") }
                     }
                 }
             }

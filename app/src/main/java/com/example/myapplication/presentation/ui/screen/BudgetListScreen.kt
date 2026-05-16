@@ -54,11 +54,18 @@ fun BudgetListScreen(
     viewModel: BudgetListViewModel,
     onNavigateToCreateBudget: () -> Unit,
     onNavigateToBudgetDetail: (budgetId: Int) -> Unit,
-    onNavigateToHome: () -> Unit
+    onNavigateToHome: () -> Unit,
+    onNavigateToDuplicatedBudget: (budgetId: Int) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val duplicatedBudgetId by viewModel.duplicatedBudgetId.collectAsState()
     var showDeleteConfirm by remember { mutableStateOf<Int?>(null) }
     var showSortMenu by remember { mutableStateOf(false) }
+
+    if (duplicatedBudgetId != null) {
+        viewModel.clearDuplicatedBudgetId()
+        onNavigateToDuplicatedBudget(duplicatedBudgetId!!)
+    }
 
     Scaffold(
         topBar = {
@@ -181,6 +188,7 @@ fun BudgetListScreen(
                         BudgetItemCard(
                             budget = budget,
                             onViewClick = { onNavigateToBudgetDetail(budget.id) },
+                            onDuplicateClick = { viewModel.duplicateBudget(budget.id) },
                             onDeleteClick = { showDeleteConfirm = budget.id }
                         )
                     }
@@ -267,6 +275,7 @@ private fun DateChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
 fun BudgetItemCard(
     budget: BudgetEntity,
     onViewClick: () -> Unit,
+    onDuplicateClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -319,16 +328,17 @@ fun BudgetItemCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(
-                    onClick = onViewClick,
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Text("Ver", fontSize = 12.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onViewClick) {
+                        Text("Ver", fontSize = 12.sp)
+                    }
+                    OutlinedButton(onClick = onDuplicateClick) {
+                        Text("Duplicar", fontSize = 12.sp)
+                    }
                 }
-
                 IconButton(onClick = onDeleteClick) {
                     Icon(
                         Icons.Filled.Delete,

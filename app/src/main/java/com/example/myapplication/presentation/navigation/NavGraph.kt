@@ -68,7 +68,7 @@ fun AppNavGraph(
 
         composable(Destination.BudgetList.route) {
             val viewModel: BudgetListViewModel = viewModel(
-                factory = BudgetListViewModel.provideFactory(budgetRepository)
+                factory = BudgetListViewModel.provideFactory(budgetRepository, budgetItemRepository)
             )
             BudgetListScreen(
                 viewModel = viewModel,
@@ -76,7 +76,10 @@ fun AppNavGraph(
                 onNavigateToBudgetDetail = { budgetId ->
                     navController.navigate(Destination.BudgetDetail.createRoute(budgetId))
                 },
-                onNavigateToHome = { navController.popBackStack() }
+                onNavigateToHome = { navController.popBackStack() },
+                onNavigateToDuplicatedBudget = { budgetId ->
+                    navController.navigate(Destination.BudgetDetail.createRoute(budgetId))
+                }
             )
         }
 
