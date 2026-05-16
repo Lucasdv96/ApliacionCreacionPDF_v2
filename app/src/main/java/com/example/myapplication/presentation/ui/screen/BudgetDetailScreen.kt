@@ -271,13 +271,13 @@ fun BudgetDetailScreen(
                         )
                     }
 
-                    Row(
+                    Column(
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
                             onClick = viewModel::generateAndShare,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                             enabled = !uiState.isSaving && !uiState.isGeneratingPdf
                         ) {
                             if (uiState.isGeneratingPdf) {
@@ -285,18 +285,23 @@ fun BudgetDetailScreen(
                             } else {
                                 Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
                             }
-                            Text("Compartir")
+                            Text("Compartir PDF")
                         }
-                        Button(
-                            onClick = { showDeleteConfirm = true },
-                            modifier = Modifier.weight(1f),
-                            enabled = !uiState.isSaving
-                        ) { Text("Eliminar") }
-                        Button(
-                            onClick = onNavigateBack,
-                            modifier = Modifier.weight(1f),
-                            enabled = !uiState.isSaving
-                        ) { Text("Volver") }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = { showDeleteConfirm = true },
+                                modifier = Modifier.weight(1f),
+                                enabled = !uiState.isSaving
+                            ) { Text("Eliminar") }
+                            Button(
+                                onClick = onNavigateBack,
+                                modifier = Modifier.weight(1f),
+                                enabled = !uiState.isSaving
+                            ) { Text("Volver") }
+                        }
                     }
                 }
             }
