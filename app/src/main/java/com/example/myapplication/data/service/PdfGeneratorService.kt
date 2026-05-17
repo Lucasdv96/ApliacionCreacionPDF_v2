@@ -49,14 +49,15 @@ class PdfGeneratorService(private val context: Context) {
         addBudgetInfo(document, budget, client)
         document.add(Paragraph("\n"))
         addItemsTable(document, items)
-        document.add(Paragraph("\n"))
-        addPriceSummary(document, items, budget)
 
         val itemsWithDimensions = items.filter { it.widthMm > 0 && it.heightMm > 0 }
         if (itemsWithDimensions.isNotEmpty()) {
             document.add(Paragraph("\n"))
             addTechnicalDetails(document, pdfDocument, itemsWithDimensions)
         }
+
+        document.add(Paragraph("\n"))
+        addPriceSummary(document, items, budget)
 
         if (budget.notes.isNotEmpty()) {
             document.add(Paragraph("\n"))
