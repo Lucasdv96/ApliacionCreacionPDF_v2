@@ -34,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,18 +68,23 @@ fun BudgetDetailScreen(
     @Suppress("OPT_IN_USAGE")
     val clientSuggestions by viewModel.clientSuggestions.collectAsState()
 
-    if (uiState.duplicatedBudgetId != null) {
-        viewModel.clearDuplicatedBudgetId()
-        onNavigateToDuplicatedBudget(uiState.duplicatedBudgetId!!)
+    LaunchedEffect(uiState.duplicatedBudgetId) {
+        if (uiState.duplicatedBudgetId != null) {
+            viewModel.clearDuplicatedBudgetId()
+            onNavigateToDuplicatedBudget(uiState.duplicatedBudgetId!!)
+        }
     }
+
+    LaunchedEffect(uiState.budget, uiState.error) {
+        if (uiState.budget == null && uiState.error?.contains("no encontrado") == true) {
+            onBudgetDeleted()
+        }
+    }
+
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showClientDropdown by remember { mutableStateOf(false) }
     var showLaborDialog by remember { mutableStateOf(false) }
     var laborCostInput by remember { mutableStateOf("") }
-
-    if (uiState.budget == null && uiState.error?.contains("no encontrado") == true) {
-        onBudgetDeleted()
-    }
 
     Scaffold(
         topBar = {

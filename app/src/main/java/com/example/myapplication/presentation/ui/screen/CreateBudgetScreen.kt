@@ -28,6 +28,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,8 +53,10 @@ fun CreateBudgetScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showClientDropdown by remember { mutableStateOf(false) }
 
-    if (uiState.savedBudgetId != null) {
-        onBudgetCreated(uiState.savedBudgetId!!)
+    LaunchedEffect(uiState.savedBudgetId) {
+        if (uiState.savedBudgetId != null) {
+            onBudgetCreated(uiState.savedBudgetId!!)
+        }
     }
 
     Scaffold(
