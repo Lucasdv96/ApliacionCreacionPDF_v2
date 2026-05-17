@@ -25,5 +25,8 @@ data class BudgetItemEntity(
     val quantity: Int = 0,
     val unitPrice: Double = 0.0,
     val laborCost: Double = 0.0,
-    val notes: String = ""
+    val notes: String = "",
+    val widthMm: Int = 0,
+    val heightMm: Int = 0,
+    val panelCount: Int = 0
 )
