@@ -2,6 +2,8 @@ package com.example.myapplication.data.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.myapplication.data.db.dao.BudgetDao
 import com.example.myapplication.data.db.dao.BudgetItemDao
 import com.example.myapplication.data.db.dao.ClientDao
@@ -18,7 +20,7 @@ import com.example.myapplication.data.db.entity.SettingsEntity
         BudgetItemEntity::class,
         SettingsEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,4 +28,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun clientDao(): ClientDao
     abstract fun budgetItemDao(): BudgetItemDao
     abstract fun settingsDao(): SettingsDao
+
+    companion object {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE budget_items ADD COLUMN widthMm INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE budget_items ADD COLUMN heightMm INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE budget_items ADD COLUMN panelCount INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+    }
 }

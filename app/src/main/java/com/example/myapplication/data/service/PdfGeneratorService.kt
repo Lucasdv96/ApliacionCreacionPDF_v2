@@ -3,24 +3,30 @@ package com.example.myapplication.data.service
 import android.content.Context
 import com.example.myapplication.data.db.entity.BudgetEntity
 import com.example.myapplication.data.db.entity.BudgetItemEntity
+import com.example.myapplication.utils.formatCurrency
 import com.example.myapplication.data.db.entity.SettingsEntity
-import com.itextpdf.io.font.PdfEncodings
+import com.itextpdf.io.image.ImageDataFactory
 import com.itextpdf.kernel.colors.ColorConstants
+import com.itextpdf.kernel.colors.DeviceRgb
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
 import com.itextpdf.layout.Document
 import com.itextpdf.layout.borders.SolidBorder
 import com.itextpdf.layout.element.Cell
+import com.itextpdf.layout.element.Image
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
 import com.itextpdf.layout.properties.TextAlignment
 import com.itextpdf.layout.properties.UnitValue
+import com.itextpdf.layout.properties.VerticalAlignment
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class PdfGeneratorService(private val context: Context) {
+
+    private val diagramDrawer = TechnicalDiagramDrawer()
 
     fun generateBudgetPdf(
         budget: BudgetEntity,
@@ -38,42 +44,34 @@ class PdfGeneratorService(private val context: Context) {
         val pdfDocument = PdfDocument(writer)
         val document = Document(pdfDocument)
 
-        // Encabezado - Datos de la empresa
         addCompanyHeader(document, settings)
-
-        // Espacio
         document.add(Paragraph("\n"))
-
-        // Datos del presupuesto
         addBudgetInfo(document, budget, client)
-
-        // Espacio
         document.add(Paragraph("\n"))
-
-        // Tabla de items
         addItemsTable(document, items)
 
-        // Espacio
-        document.add(Paragraph("\n"))
-
-        // Resumen de precios
-        addPriceSummary(document, items, budget)
-
-        // Notas
-        if (budget.notes.isNotEmpty()) {
-            document.add(Paragraph("NOTAS").setBold())
-            document.add(Paragraph(budget.notes))
+        val itemsWithDimensions = items.filter { it.widthMm > 0 && it.heightMm > 0 }
+        if (itemsWithDimensions.isNotEmpty()) {
             document.add(Paragraph("\n"))
+            addTechnicalDetails(document, pdfDocument, itemsWithDimensions)
         }
 
-        // Términos y condiciones
+        document.add(Paragraph("\n"))
+        addPriceSummary(document, items, budget)
+
+        if (budget.notes.isNotEmpty()) {
+            document.add(Paragraph("\n"))
+            document.add(Paragraph("NOTAS").setBold())
+            document.add(Paragraph(budget.notes))
+        }
+
         if (settings.termsConditions.isNotEmpty()) {
+            document.add(Paragraph("\n"))
             document.add(Paragraph("TÉRMINOS Y CONDICIONES").setBold())
             document.add(Paragraph(settings.termsConditions).setFontSize(10f))
         }
 
         document.close()
-
         return pdfFile.absolutePath
     }
 
@@ -81,7 +79,6 @@ class PdfGeneratorService(private val context: Context) {
         val headerTable = Table(UnitValue.createPercentArray(floatArrayOf(70f, 30f)))
         headerTable.setWidth(UnitValue.createPercentValue(100f))
 
-        // Datos de la empresa
         val companyInfo = StringBuilder()
         companyInfo.append("${settings.companyName}\n")
         if (settings.companyCuit.isNotEmpty()) companyInfo.append("CUIT: ${settings.companyCuit}\n")
@@ -90,18 +87,20 @@ class PdfGeneratorService(private val context: Context) {
         if (settings.companyPhone.isNotEmpty()) companyInfo.append("\nTeléfono: ${settings.companyPhone}\n")
         if (settings.companyEmail.isNotEmpty()) companyInfo.append("Email: ${settings.companyEmail}")
 
-        val companyCell = Cell()
-            .add(Paragraph(companyInfo.toString()).setBold().setFontSize(12f))
-            .setBorder(null)
+        headerTable.addCell(
+            Cell().add(Paragraph(companyInfo.toString()).setBold().setFontSize(12f)).setBorder(null)
+        )
 
-        headerTable.addCell(companyCell)
-
-        // Logo placeholder (si existe)
-        val logoCell = Cell()
-            .add(Paragraph("LOGO").setTextAlignment(TextAlignment.RIGHT).setFontColor(ColorConstants.LIGHT_GRAY))
-            .setBorder(null)
-
-        headerTable.addCell(logoCell)
+        val logoFile = if (settings.logoPath.isNotEmpty()) File(settings.logoPath) else null
+        if (logoFile != null && logoFile.exists()) {
+            val imageData = ImageDataFactory.create(logoFile.absolutePath)
+            val image = Image(imageData).setMaxHeight(140f).setMaxWidth(200f).setAutoScale(false)
+            headerTable.addCell(
+                Cell().add(image).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
+            )
+        } else {
+            headerTable.addCell(Cell().setBorder(null))
+        }
 
         document.add(headerTable)
     }
@@ -114,50 +113,44 @@ class PdfGeneratorService(private val context: Context) {
         val infoTable = Table(UnitValue.createPercentArray(floatArrayOf(50f, 50f)))
         infoTable.setWidth(UnitValue.createPercentValue(100f))
 
-        // Presupuesto info
+        // 1. Sin estado
         val budgetInfoCell = Cell()
             .add(Paragraph("PRESUPUESTO #${budget.budgetNumber}").setBold())
             .add(Paragraph("Proyecto: ${budget.project}"))
-            .add(Paragraph("Estado: ${budget.status}"))
             .add(Paragraph("Fecha: ${formatDate(budget.createdDate)}"))
             .setBorder(null)
-
         infoTable.addCell(budgetInfoCell)
 
-        // Cliente info
-        val clientInfoCell = Cell()
-            .add(Paragraph("CLIENTE").setBold())
+        val clientInfoCell = Cell().add(Paragraph("CLIENTE").setBold())
         if (client != null) {
-            clientInfoCell
-                .add(Paragraph(client.name))
+            clientInfoCell.add(Paragraph(client.name))
             if (client.cuit.isNotEmpty()) clientInfoCell.add(Paragraph("CUIT: ${client.cuit}"))
             if (client.address.isNotEmpty()) clientInfoCell.add(Paragraph(client.address))
-            if (client.city.isNotEmpty()) clientInfoCell.add(Paragraph("${client.city}${if (client.province.isNotEmpty()) ", ${client.province}" else ""}"))
+            if (client.city.isNotEmpty()) clientInfoCell.add(
+                Paragraph("${client.city}${if (client.province.isNotEmpty()) ", ${client.province}" else ""}")
+            )
             if (client.phone.isNotEmpty()) clientInfoCell.add(Paragraph("Tel: ${client.phone}"))
             if (client.email.isNotEmpty()) clientInfoCell.add(Paragraph(client.email))
         }
         clientInfoCell.setBorder(null)
-
         infoTable.addCell(clientInfoCell)
 
         document.add(infoTable)
     }
 
     private fun addItemsTable(document: Document, items: List<BudgetItemEntity>) {
-        val table = Table(UnitValue.createPercentArray(floatArrayOf(15f, 25f, 15f, 15f, 15f, 15f)))
+        // 2. Sin columna M.O. — columnas: Tipo | Descripción/Especificaciones/Notas | Cant | Precio | Subtotal
+        val table = Table(UnitValue.createPercentArray(floatArrayOf(15f, 40f, 10f, 17f, 18f)))
         table.setWidth(UnitValue.createPercentValue(100f))
 
-        // Encabezados
-        val headers = listOf("Tipo", "Descripción", "Cantidad", "Precio Unit.", "M.O.", "Subtotal")
-        headers.forEach { header ->
-            val cell = Cell()
-                .add(Paragraph(header).setBold())
-                .setBackgroundColor(ColorConstants.LIGHT_GRAY)
-                .setTextAlignment(TextAlignment.CENTER)
-            table.addCell(cell)
+        listOf("Tipo", "Descripción", "Cant.", "Precio Unit.", "Subtotal").forEach { header ->
+            table.addCell(
+                Cell().add(Paragraph(header).setBold())
+                    .setBackgroundColor(ColorConstants.LIGHT_GRAY)
+                    .setTextAlignment(TextAlignment.CENTER)
+            )
         }
 
-        // Items
         items.forEach { item ->
             val itemType = when (item.type) {
                 "WINDOW" -> "Ventana"
@@ -167,12 +160,17 @@ class PdfGeneratorService(private val context: Context) {
             }
             val subtotal = item.quantity * item.unitPrice
 
+            // 5. Descripción + especificaciones + notas en la misma celda
+            val descCell = Cell()
+            if (item.description.isNotEmpty()) descCell.add(Paragraph(item.description))
+            if (item.specifications.isNotEmpty()) descCell.add(Paragraph(item.specifications).setFontSize(9f).setItalic())
+            if (item.notes.isNotEmpty()) descCell.add(Paragraph("Nota: ${item.notes}").setFontSize(9f))
+
             table.addCell(Cell().add(Paragraph(itemType)))
-            table.addCell(Cell().add(Paragraph(item.description)))
+            table.addCell(descCell)
             table.addCell(Cell().add(Paragraph(item.quantity.toString())).setTextAlignment(TextAlignment.CENTER))
-            table.addCell(Cell().add(Paragraph("\$${String.format("%.2f", item.unitPrice)}")).setTextAlignment(TextAlignment.RIGHT))
-            table.addCell(Cell().add(Paragraph("\$${String.format("%.2f", item.laborCost)}")).setTextAlignment(TextAlignment.RIGHT))
-            table.addCell(Cell().add(Paragraph("\$${String.format("%.2f", subtotal)}")).setTextAlignment(TextAlignment.RIGHT))
+            table.addCell(Cell().add(Paragraph(formatCurrency(item.unitPrice))).setTextAlignment(TextAlignment.RIGHT))
+            table.addCell(Cell().add(Paragraph(formatCurrency(subtotal))).setTextAlignment(TextAlignment.RIGHT))
         }
 
         document.add(table)
@@ -183,42 +181,140 @@ class PdfGeneratorService(private val context: Context) {
         summaryTable.setWidth(UnitValue.createPercentValue(100f))
 
         val itemsTotal = items.sumOf { it.quantity * it.unitPrice }
-        val laborTotal = items.sumOf { it.laborCost }
-        val grandTotal = itemsTotal + laborTotal + budget.laborCostPerItem
+        val grandTotal = itemsTotal + budget.laborCostPerItem
 
-        // Items
         var cell = Cell().add(Paragraph("Subtotal Items:")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
         summaryTable.addCell(cell)
-        cell = Cell().add(Paragraph("\$${String.format("%.2f", itemsTotal)}")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
+        cell = Cell().add(Paragraph(formatCurrency(itemsTotal))).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
         summaryTable.addCell(cell)
 
-        // Labor items
-        cell = Cell().add(Paragraph("Mano de obra (items):")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
-        summaryTable.addCell(cell)
-        cell = Cell().add(Paragraph("\$${String.format("%.2f", laborTotal)}")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
-        summaryTable.addCell(cell)
-
-        // Labor presupuesto
+        // 3. Sin "Mano de obra (items)" — 4. "Mano de obra" sin "(presupuesto)"
         if (budget.laborCostPerItem > 0) {
-            cell = Cell().add(Paragraph("Mano de obra (presupuesto):")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
+            cell = Cell().add(Paragraph("Mano de obra:")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
             summaryTable.addCell(cell)
-            cell = Cell().add(Paragraph("\$${String.format("%.2f", budget.laborCostPerItem)}")).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
+            cell = Cell().add(Paragraph(formatCurrency(budget.laborCostPerItem))).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
             summaryTable.addCell(cell)
         }
 
-        // TOTAL
         cell = Cell().add(Paragraph("TOTAL:").setBold().setFontSize(14f)).setTextAlignment(TextAlignment.RIGHT)
             .setBorder(SolidBorder(1f))
         summaryTable.addCell(cell)
-        cell = Cell().add(Paragraph("\$${String.format("%.2f", grandTotal)}").setBold().setFontSize(14f)).setTextAlignment(TextAlignment.RIGHT)
+        cell = Cell().add(Paragraph(formatCurrency(grandTotal)).setBold().setFontSize(14f)).setTextAlignment(TextAlignment.RIGHT)
             .setBorder(SolidBorder(1f))
         summaryTable.addCell(cell)
 
         document.add(summaryTable)
     }
 
-    private fun formatDate(timestamp: Long): String {
-        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        return sdf.format(Date(timestamp))
+    private fun addTechnicalDetails(
+        document: Document,
+        pdfDocument: PdfDocument,
+        items: List<BudgetItemEntity>
+    ) {
+        val headerColor = DeviceRgb(0x1a, 0x4f, 0x8a)
+
+        document.add(
+            Paragraph("DETALLE TÉCNICO")
+                .setBold()
+                .setFontSize(11f)
+                .setFontColor(headerColor)
+        )
+
+        val typePrefixes = mutableMapOf("WINDOW" to 0, "DOOR" to 0, "RAILING" to 0, "OTHER" to 0)
+
+        items.forEachIndexed { _, item ->
+            val prefix = when (item.type) {
+                "WINDOW"  -> { typePrefixes["WINDOW"] = typePrefixes["WINDOW"]!! + 1; "V" }
+                "DOOR"    -> { typePrefixes["DOOR"]   = typePrefixes["DOOR"]!!   + 1; "P" }
+                "RAILING" -> { typePrefixes["RAILING"]= typePrefixes["RAILING"]!!+ 1; "B" }
+                else      -> { typePrefixes["OTHER"]  = typePrefixes["OTHER"]!!  + 1; "O" }
+            }
+            val itemCode = "$prefix${typePrefixes[item.type]!!.toString().padStart(2, '0')}"
+            val typeLabel = when (item.type) {
+                "WINDOW"  -> "Ventana"
+                "DOOR"    -> "Puerta"
+                "RAILING" -> "Baranda"
+                else      -> "Otro"
+            }
+
+            // Card outer table: full width, slight top margin
+            val card = Table(UnitValue.createPercentArray(floatArrayOf(100f)))
+                .setWidth(UnitValue.createPercentValue(100f))
+                .setMarginTop(8f)
+
+            // Header row: "V01 - Ventana"
+            val headerCell = Cell()
+                .add(Paragraph("$itemCode - $typeLabel").setBold().setFontSize(10f).setFontColor(com.itextpdf.kernel.colors.ColorConstants.WHITE))
+                .setBackgroundColor(headerColor)
+                .setPadding(4f)
+                .setBorder(null)
+            card.addCell(headerCell)
+
+            // Content row: diagram (left) + info table (right)
+            val contentTable = Table(UnitValue.createPercentArray(floatArrayOf(45f, 55f)))
+                .setWidth(UnitValue.createPercentValue(100f))
+
+            // Left cell: diagram
+            val diagram = diagramDrawer.createDiagram(item, pdfDocument)
+            val diagramCell = Cell().setBorder(SolidBorder(0.5f)).setPadding(6f)
+            if (diagram != null) {
+                diagram.setMaxWidth(UnitValue.createPercentValue(100f))
+                diagramCell.add(diagram)
+            } else {
+                diagramCell.add(Paragraph("Sin dimensiones").setFontSize(9f))
+            }
+            contentTable.addCell(diagramCell)
+
+            // Right cell: specs + values table
+            val infoCell = Cell().setBorder(SolidBorder(0.5f)).setPadding(6f).setVerticalAlignment(VerticalAlignment.TOP)
+
+            // Specs sub-table
+            val specsTable = Table(UnitValue.createPercentArray(floatArrayOf(40f, 60f)))
+                .setWidth(UnitValue.createPercentValue(100f))
+                .setMarginBottom(6f)
+
+            fun specRow(label: String, value: String) {
+                specsTable.addCell(Cell().add(Paragraph(label).setBold().setFontSize(9f)).setBackgroundColor(ColorConstants.LIGHT_GRAY).setPadding(3f))
+                specsTable.addCell(Cell().add(Paragraph(value).setFontSize(9f)).setPadding(3f))
+            }
+
+            specRow("Dimensiones:", "${item.widthMm}mm x ${item.heightMm}mm")
+            if (item.description.isNotEmpty()) specRow("Descripción:", item.description)
+            if (item.specifications.isNotEmpty()) specRow("Perfil:", item.specifications)
+            if (item.panelCount > 0 && item.type in listOf("WINDOW", "DOOR")) specRow("Hojas:", item.panelCount.toString())
+            if (item.notes.isNotEmpty()) specRow("Notas:", item.notes)
+
+            infoCell.add(specsTable)
+
+            // Values sub-table
+            val valuesTable = Table(UnitValue.createPercentArray(floatArrayOf(40f, 30f, 30f)))
+                .setWidth(UnitValue.createPercentValue(100f))
+
+            listOf("", "Cantidad", "Valor").forEach { h ->
+                valuesTable.addCell(
+                    Cell().add(Paragraph(h).setBold().setFontSize(9f))
+                        .setBackgroundColor(headerColor)
+                        .setFontColor(com.itextpdf.kernel.colors.ColorConstants.WHITE)
+                        .setPadding(3f)
+                )
+            }
+            valuesTable.addCell(Cell().add(Paragraph("Precio Unit.").setFontSize(9f)).setPadding(3f))
+            valuesTable.addCell(Cell().add(Paragraph(item.quantity.toString()).setFontSize(9f).setTextAlignment(TextAlignment.CENTER)).setPadding(3f))
+            valuesTable.addCell(Cell().add(Paragraph(formatCurrency(item.unitPrice)).setFontSize(9f).setTextAlignment(TextAlignment.RIGHT)).setPadding(3f))
+
+            val subtotal = item.quantity * item.unitPrice
+            valuesTable.addCell(Cell().add(Paragraph("Subtotal").setBold().setFontSize(9f)).setPadding(3f))
+            valuesTable.addCell(Cell().add(Paragraph("").setFontSize(9f)).setPadding(3f))
+            valuesTable.addCell(Cell().add(Paragraph(formatCurrency(subtotal)).setBold().setFontSize(9f).setTextAlignment(TextAlignment.RIGHT)).setPadding(3f))
+
+            infoCell.add(valuesTable)
+            contentTable.addCell(infoCell)
+
+            card.addCell(Cell().add(contentTable).setBorder(null).setPadding(0f))
+            document.add(card)
+        }
     }
+
+    private fun formatDate(timestamp: Long): String =
+        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(timestamp))
 }

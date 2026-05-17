@@ -2,171 +2,122 @@ package com.example.myapplication.presentation.ui.screen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myapplication.data.db.entity.BudgetEntity
-import com.example.myapplication.presentation.viewmodel.HomeViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel,
-    onNavigateToBudgetList: () -> Unit,
     onNavigateToCreateBudget: () -> Unit,
-    onNavigateToSettings: () -> Unit,
-    onNavigateToBudgetDetail: (Int) -> Unit = {}
+    onNavigateToClients: () -> Unit,
+    onNavigateToBudgetList: () -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
-    val budgets by viewModel.budgets.collectAsState()
-
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("MB Cerramientos") },
-                actions = {
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Filled.Settings, contentDescription = "Settings")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = onNavigateToCreateBudget) {
-                Icon(Icons.Filled.Add, contentDescription = "Crear presupuesto")
-            }
+            TopAppBar(title = { Text("MB Cerramientos") })
         }
     ) { paddingValues ->
-        if (budgets.isEmpty()) {
-            EmptyBudgetsView(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                onCreateBudget = onNavigateToCreateBudget
-            )
-        } else {
-            BudgetListView(
-                budgets = budgets,
-                onBudgetClick = onNavigateToBudgetDetail,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            )
-        }
-    }
-}
-
-@Composable
-fun EmptyBudgetsView(
-    modifier: Modifier = Modifier,
-    onCreateBudget: () -> Unit
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "No tienes presupuestos",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "Crea tu primer presupuesto",
-            fontSize = 14.sp,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        Button(
-            onClick = onCreateBudget,
-            modifier = Modifier.padding(top = 16.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Crear Presupuesto")
+            Text(
+                text = "¿Qué querés hacer?",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            MenuCard(
+                icon = Icons.Filled.Add,
+                title = "Nuevo Presupuesto",
+                subtitle = "Crear un presupuesto para un cliente",
+                onClick = onNavigateToCreateBudget
+            )
+
+            MenuCard(
+                icon = Icons.Filled.DateRange,
+                title = "Historial de Presupuestos",
+                subtitle = "Ver y buscar presupuestos anteriores",
+                onClick = onNavigateToBudgetList
+            )
+
+            MenuCard(
+                icon = Icons.Filled.Person,
+                title = "Clientes",
+                subtitle = "Ver y editar la lista de clientes",
+                onClick = onNavigateToClients
+            )
+
+            MenuCard(
+                icon = Icons.Filled.Settings,
+                title = "Configuración",
+                subtitle = "Datos de la empresa y términos",
+                onClick = onNavigateToSettings
+            )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BudgetListView(
-    budgets: List<BudgetEntity>,
-    onBudgetClick: (Int) -> Unit = {},
-    modifier: Modifier = Modifier
-) {
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-
-    LazyColumn(
-        modifier = modifier.padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(budgets) { budget ->
-            BudgetCard(budget = budget, dateFormat = dateFormat, onClick = { onBudgetClick(budget.id) })
-        }
-    }
-}
-
-@Composable
-fun BudgetCard(
-    budget: BudgetEntity,
-    dateFormat: SimpleDateFormat,
-    onClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+fun MenuCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp)
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = budget.budgetNumber,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.primary
             )
-            Text(
-                text = budget.project,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            Text(
-                text = dateFormat.format(Date(budget.createdDate)),
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            Text(
-                text = "Estado: ${budget.status}",
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            Column {
+                Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
