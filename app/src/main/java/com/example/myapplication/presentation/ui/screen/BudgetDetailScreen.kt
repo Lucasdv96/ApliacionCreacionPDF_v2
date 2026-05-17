@@ -41,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -255,11 +256,13 @@ fun BudgetDetailScreen(
 
                     SectionTitle("📝 NOTAS")
                     OutlinedTextField(
-                        value = budget.notes,
-                        onValueChange = { viewModel.updateBudgetNotes(it) },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        minLines = 3,
-                        enabled = !uiState.isSaving
+                        value = uiState.notesInput,
+                        onValueChange = { viewModel.updateNotesInput(it) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .onFocusChanged { if (!it.isFocused) viewModel.saveNotes() },
+                        minLines = 3
                     )
 
                     if (uiState.error != null) {

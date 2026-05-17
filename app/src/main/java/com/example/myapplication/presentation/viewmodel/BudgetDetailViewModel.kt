@@ -39,7 +39,8 @@ data class BudgetDetailUiState(
     val editClientCity: String = "",
     val editClientProvince: String = "",
     val editClientPhone: String = "",
-    val editClientEmail: String = ""
+    val editClientEmail: String = "",
+    val notesInput: String = ""
 )
 
 class BudgetDetailViewModel(
@@ -84,6 +85,7 @@ class BudgetDetailViewModel(
                     budget = budget,
                     client = client,
                     isLoading = false,
+                    notesInput = budget?.notes ?: "",
                     error = if (budget == null) "Presupuesto no encontrado" else null
                 )
             } catch (e: Exception) {
@@ -133,21 +135,22 @@ class BudgetDetailViewModel(
         }
     }
 
-    fun updateBudgetNotes(notes: String) {
+    fun updateNotesInput(notes: String) {
+        _uiState.value = _uiState.value.copy(notesInput = notes)
+    }
+
+    fun saveNotes() {
         val currentBudget = _uiState.value.budget ?: return
+        val notes = _uiState.value.notesInput
+        if (notes == currentBudget.notes) return
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(isSaving = true)
                 val updatedBudget = currentBudget.copy(
                     notes = notes,
                     modifiedDate = System.currentTimeMillis()
                 )
                 budgetRepository.updateBudget(updatedBudget)
-                _uiState.value = _uiState.value.copy(
-                    budget = updatedBudget,
-                    isSaving = false,
-                    error = null
-                )
+                _uiState.value = _uiState.value.copy(budget = updatedBudget, error = null)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = "Error al guardar notas: ${e.message}",
