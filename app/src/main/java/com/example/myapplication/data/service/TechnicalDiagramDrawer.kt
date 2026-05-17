@@ -227,7 +227,7 @@ class TechnicalDiagramDrawer {
         val hTextW = font.getWidth(hText, fontSize)
         canvas.beginText()
         canvas.setFontAndSize(font, fontSize)
-        canvas.setTextMatrix(0.0, 1.0, -1.0, 0.0, (dimX - 8).toDouble(), (y + drawH / 2 - hTextW / 2).toDouble())
+        canvas.setTextMatrix(0f, 1f, -1f, 0f, dimX - 8f, y + drawH / 2 - hTextW / 2)
         canvas.showText(hText)
         canvas.endText()
     }
