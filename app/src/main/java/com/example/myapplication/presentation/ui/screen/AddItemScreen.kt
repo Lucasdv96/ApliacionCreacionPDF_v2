@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.example.myapplication.utils.formatCurrency
+import com.example.myapplication.utils.parseAmount
+import com.example.myapplication.utils.toInputString
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -141,33 +144,50 @@ fun AddItemScreen(
 
             FormTextField(
                 label = "Precio Unitario",
-                value = if (uiState.unitPrice == 0.0) "" else uiState.unitPrice.toString(),
-                onValueChange = { value ->
-                    val doubleValue = value.toDoubleOrNull() ?: 0.0
-                    viewModel.updateUnitPrice(doubleValue)
-                },
+                value = uiState.unitPrice.toInputString(),
+                onValueChange = { viewModel.updateUnitPrice(parseAmount(it)) },
                 enabled = !uiState.isSaving
             )
 
             if (uiState.quantity > 0 && uiState.unitPrice > 0.0) {
                 Text(
-                    text = "Subtotal: \$${String.format("%.2f", uiState.quantity * uiState.unitPrice)}",
+                    text = "Subtotal: ${formatCurrency(uiState.quantity * uiState.unitPrice)}",
                     fontSize = 14.sp,
                     modifier = Modifier.padding(8.dp)
                 )
             }
 
-            if (uiState.type != "LABOR") {
-                SectionTitle("MANO DE OBRA")
-                FormTextField(
-                    label = "Costo de Mano de Obra (opcional)",
-                    value = if (uiState.laborCost == 0.0) "" else uiState.laborCost.toString(),
-                    onValueChange = { value ->
-                        val doubleValue = value.toDoubleOrNull() ?: 0.0
-                        viewModel.updateLaborCost(doubleValue)
-                    },
-                    enabled = !uiState.isSaving
-                )
+            if (uiState.type in listOf("WINDOW", "DOOR", "RAILING")) {
+                SectionTitle("DIMENSIONES (para el plano técnico)")
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FormTextField(
+                        label = "Ancho (mm)",
+                        value = if (uiState.widthMm == 0) "" else uiState.widthMm.toString(),
+                        onValueChange = { viewModel.updateWidthMm(it.toIntOrNull() ?: 0) },
+                        enabled = !uiState.isSaving,
+                        modifier = Modifier.weight(1f)
+                    )
+                    FormTextField(
+                        label = "Alto (mm)",
+                        value = if (uiState.heightMm == 0) "" else uiState.heightMm.toString(),
+                        onValueChange = { viewModel.updateHeightMm(it.toIntOrNull() ?: 0) },
+                        enabled = !uiState.isSaving,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (uiState.type in listOf("WINDOW", "DOOR")) {
+                    FormTextField(
+                        label = "Cantidad de hojas",
+                        value = if (uiState.panelCount == 0) "" else uiState.panelCount.toString(),
+                        onValueChange = { viewModel.updatePanelCount(it.toIntOrNull() ?: 0) },
+                        enabled = !uiState.isSaving
+                    )
+                }
             }
 
             SectionTitle("NOTAS")

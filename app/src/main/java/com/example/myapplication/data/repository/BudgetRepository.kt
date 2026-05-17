@@ -33,7 +33,7 @@ class BudgetRepository(private val budgetDao: BudgetDao) {
         val count = getBudgetCount() + 1
         val monthFormat = java.text.SimpleDateFormat("MMM", java.util.Locale.getDefault())
         val month = monthFormat.format(java.util.Date())
-        val sequence = count.toString().padStart(2, '0')
+        val sequence = count.toString().padStart(3, '0')
         return "$projectName-$month-$sequence"
     }
 }

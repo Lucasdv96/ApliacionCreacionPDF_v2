@@ -26,7 +26,7 @@ class AppDataContainer(private val context: Context) : AppContainer {
             AppDatabase::class.java,
             "budget_app_database"
         )
-            .fallbackToDestructiveMigration()
+            .addMigrations(AppDatabase.MIGRATION_1_2)
             .enableMultiInstanceInvalidation()
             .build()
     }

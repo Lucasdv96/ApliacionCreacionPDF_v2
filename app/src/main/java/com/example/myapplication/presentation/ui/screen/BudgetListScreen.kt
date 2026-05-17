@@ -12,10 +12,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -30,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,11 +56,20 @@ fun BudgetListScreen(
     viewModel: BudgetListViewModel,
     onNavigateToCreateBudget: () -> Unit,
     onNavigateToBudgetDetail: (budgetId: Int) -> Unit,
-    onNavigateToHome: () -> Unit
+    onNavigateToHome: () -> Unit,
+    onNavigateToDuplicatedBudget: (budgetId: Int) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val duplicatedBudgetId by viewModel.duplicatedBudgetId.collectAsState()
     var showDeleteConfirm by remember { mutableStateOf<Int?>(null) }
     var showSortMenu by remember { mutableStateOf(false) }
+
+    LaunchedEffect(duplicatedBudgetId) {
+        if (duplicatedBudgetId != null) {
+            viewModel.clearDuplicatedBudgetId()
+            onNavigateToDuplicatedBudget(duplicatedBudgetId!!)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -67,7 +77,7 @@ fun BudgetListScreen(
                 title = { Text("Mis Presupuestos") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateToHome) {
-                        Text("←", fontSize = 20.sp)
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
                 actions = {
@@ -138,21 +148,6 @@ fun BudgetListScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                StatusFilterButton("Todos", null, uiState.selectedStatus, viewModel::setStatusFilter)
-                StatusFilterButton("Borrador", "DRAFT", uiState.selectedStatus, viewModel::setStatusFilter)
-                StatusFilterButton("Enviado", "SENT", uiState.selectedStatus, viewModel::setStatusFilter)
-                StatusFilterButton("Aceptado", "ACCEPTED", uiState.selectedStatus, viewModel::setStatusFilter)
-                StatusFilterButton("Rechazado", "REJECTED", uiState.selectedStatus, viewModel::setStatusFilter)
-                StatusFilterButton("Completado", "COMPLETED", uiState.selectedStatus, viewModel::setStatusFilter)
-            }
-
             DateFilterRow(
                 dateFrom = uiState.dateFrom,
                 onDateRangeSelected = { from, to -> viewModel.setDateRange(from, to) }
@@ -197,6 +192,7 @@ fun BudgetListScreen(
                         BudgetItemCard(
                             budget = budget,
                             onViewClick = { onNavigateToBudgetDetail(budget.id) },
+                            onDuplicateClick = { viewModel.duplicateBudget(budget.id) },
                             onDeleteClick = { showDeleteConfirm = budget.id }
                         )
                     }
@@ -216,23 +212,10 @@ fun BudgetListScreen(
     }
 }
 
-@Composable
-private fun StatusFilterButton(
-    label: String,
-    status: String?,
-    selectedStatus: String?,
-    onClick: (String?) -> Unit
-) {
-    val isSelected = selectedStatus == status
-    if (isSelected) {
-        Button(onClick = { onClick(status) }) {
-            Text(label, fontSize = 12.sp)
-        }
-    } else {
-        OutlinedButton(onClick = { onClick(status) }) {
-            Text(label, fontSize = 12.sp)
-        }
-    }
+private fun extractSequence(budgetNumber: String): String {
+    val parts = budgetNumber.split("-")
+    val last = parts.lastOrNull() ?: budgetNumber
+    return last.toIntOrNull()?.toString()?.padStart(3, '0') ?: last.padStart(3, '0')
 }
 
 @Composable
@@ -296,6 +279,7 @@ private fun DateChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
 fun BudgetItemCard(
     budget: BudgetEntity,
     onViewClick: () -> Unit,
+    onDuplicateClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -317,44 +301,48 @@ fun BudgetItemCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = budget.budgetNumber,
+                        text = budget.project,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = budget.project,
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(top = 4.dp)
                     )
                     Text(
                         text = dateFormat.format(Date(budget.createdDate)),
                         fontSize = 12.sp,
                         modifier = Modifier.padding(top = 4.dp)
                     )
+                    Row(
+                        modifier = Modifier.padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "N° Presupuesto",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "  ${extractSequence(budget.budgetNumber)}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
-
-                Text(
-                    text = budget.status,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
             }
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(
-                    onClick = onViewClick,
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Text("Ver", fontSize = 12.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onViewClick) {
+                        Text("Ver", fontSize = 12.sp)
+                    }
+                    OutlinedButton(onClick = onDuplicateClick) {
+                        Text("Duplicar", fontSize = 12.sp)
+                    }
                 }
-
                 IconButton(onClick = onDeleteClick) {
                     Icon(
                         Icons.Filled.Delete,

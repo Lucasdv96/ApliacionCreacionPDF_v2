@@ -18,6 +18,9 @@ data class AddItemUiState(
     val unitPrice: Double = 0.0,
     val laborCost: Double = 0.0,
     val notes: String = "",
+    val widthMm: Int = 0,
+    val heightMm: Int = 0,
+    val panelCount: Int = 0,
     val isSaving: Boolean = false,
     val error: String? = null,
     val itemSaved: Boolean = false,
@@ -55,6 +58,9 @@ class AddItemViewModel(
                         unitPrice = item.unitPrice,
                         laborCost = item.laborCost,
                         notes = item.notes,
+                        widthMm = item.widthMm,
+                        heightMm = item.heightMm,
+                        panelCount = item.panelCount,
                         isEditMode = true
                     )
                 }
@@ -71,6 +77,9 @@ class AddItemViewModel(
     fun updateUnitPrice(price: Double) { _uiState.value = _uiState.value.copy(unitPrice = if (price >= 0) price else 0.0) }
     fun updateLaborCost(cost: Double) { _uiState.value = _uiState.value.copy(laborCost = if (cost >= 0) cost else 0.0) }
     fun updateNotes(notes: String) { _uiState.value = _uiState.value.copy(notes = notes) }
+    fun updateWidthMm(value: Int) { _uiState.value = _uiState.value.copy(widthMm = if (value >= 0) value else 0) }
+    fun updateHeightMm(value: Int) { _uiState.value = _uiState.value.copy(heightMm = if (value >= 0) value else 0) }
+    fun updatePanelCount(value: Int) { _uiState.value = _uiState.value.copy(panelCount = if (value >= 0) value else 0) }
 
     fun saveItem() {
         viewModelScope.launch {
@@ -86,7 +95,10 @@ class AddItemViewModel(
                         quantity = s.quantity,
                         unitPrice = s.unitPrice,
                         laborCost = s.laborCost,
-                        notes = s.notes
+                        notes = s.notes,
+                        widthMm = s.widthMm,
+                        heightMm = s.heightMm,
+                        panelCount = s.panelCount
                     )
                     budgetItemRepository.updateItem(updated)
                 } else {
@@ -98,7 +110,10 @@ class AddItemViewModel(
                         quantity = s.quantity,
                         unitPrice = s.unitPrice,
                         laborCost = s.laborCost,
-                        notes = s.notes
+                        notes = s.notes,
+                        widthMm = s.widthMm,
+                        heightMm = s.heightMm,
+                        panelCount = s.panelCount
                     )
                     budgetItemRepository.createItem(item)
                 }
