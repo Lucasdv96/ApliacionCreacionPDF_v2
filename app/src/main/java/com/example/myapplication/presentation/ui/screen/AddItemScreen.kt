@@ -157,6 +157,39 @@ fun AddItemScreen(
                 )
             }
 
+            if (uiState.type in listOf("WINDOW", "DOOR", "RAILING")) {
+                SectionTitle("DIMENSIONES (para el plano técnico)")
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FormTextField(
+                        label = "Ancho (mm)",
+                        value = if (uiState.widthMm == 0) "" else uiState.widthMm.toString(),
+                        onValueChange = { viewModel.updateWidthMm(it.toIntOrNull() ?: 0) },
+                        enabled = !uiState.isSaving,
+                        modifier = Modifier.weight(1f)
+                    )
+                    FormTextField(
+                        label = "Alto (mm)",
+                        value = if (uiState.heightMm == 0) "" else uiState.heightMm.toString(),
+                        onValueChange = { viewModel.updateHeightMm(it.toIntOrNull() ?: 0) },
+                        enabled = !uiState.isSaving,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (uiState.type in listOf("WINDOW", "DOOR")) {
+                    FormTextField(
+                        label = "Cantidad de hojas",
+                        value = if (uiState.panelCount == 0) "" else uiState.panelCount.toString(),
+                        onValueChange = { viewModel.updatePanelCount(it.toIntOrNull() ?: 0) },
+                        enabled = !uiState.isSaving
+                    )
+                }
+            }
+
             SectionTitle("NOTAS")
 
             FormTextField(
