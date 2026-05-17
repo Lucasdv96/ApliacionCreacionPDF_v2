@@ -7,6 +7,7 @@ import com.example.myapplication.utils.formatCurrency
 import com.example.myapplication.data.db.entity.SettingsEntity
 import com.itextpdf.io.image.ImageDataFactory
 import com.itextpdf.kernel.colors.ColorConstants
+import com.itextpdf.kernel.colors.DeviceRgb
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
 import com.itextpdf.layout.Document
@@ -17,12 +18,15 @@ import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
 import com.itextpdf.layout.properties.TextAlignment
 import com.itextpdf.layout.properties.UnitValue
+import com.itextpdf.layout.properties.VerticalAlignment
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class PdfGeneratorService(private val context: Context) {
+
+    private val diagramDrawer = TechnicalDiagramDrawer()
 
     fun generateBudgetPdf(
         budget: BudgetEntity,
@@ -47,6 +51,12 @@ class PdfGeneratorService(private val context: Context) {
         addItemsTable(document, items)
         document.add(Paragraph("\n"))
         addPriceSummary(document, items, budget)
+
+        val itemsWithDimensions = items.filter { it.widthMm > 0 && it.heightMm > 0 }
+        if (itemsWithDimensions.isNotEmpty()) {
+            document.add(Paragraph("\n"))
+            addTechnicalDetails(document, pdfDocument, itemsWithDimensions)
+        }
 
         if (budget.notes.isNotEmpty()) {
             document.add(Paragraph("\n"))
@@ -193,6 +203,115 @@ class PdfGeneratorService(private val context: Context) {
         summaryTable.addCell(cell)
 
         document.add(summaryTable)
+    }
+
+    private fun addTechnicalDetails(
+        document: Document,
+        pdfDocument: PdfDocument,
+        items: List<BudgetItemEntity>
+    ) {
+        val headerColor = DeviceRgb(0x1a, 0x4f, 0x8a)
+
+        document.add(
+            Paragraph("DETALLE TÉCNICO")
+                .setBold()
+                .setFontSize(11f)
+                .setFontColor(headerColor)
+        )
+
+        val typePrefixes = mutableMapOf("WINDOW" to 0, "DOOR" to 0, "RAILING" to 0, "OTHER" to 0)
+
+        items.forEachIndexed { _, item ->
+            val prefix = when (item.type) {
+                "WINDOW"  -> { typePrefixes["WINDOW"] = typePrefixes["WINDOW"]!! + 1; "V" }
+                "DOOR"    -> { typePrefixes["DOOR"]   = typePrefixes["DOOR"]!!   + 1; "P" }
+                "RAILING" -> { typePrefixes["RAILING"]= typePrefixes["RAILING"]!!+ 1; "B" }
+                else      -> { typePrefixes["OTHER"]  = typePrefixes["OTHER"]!!  + 1; "O" }
+            }
+            val itemCode = "$prefix${typePrefixes[item.type]!!.toString().padStart(2, '0')}"
+            val typeLabel = when (item.type) {
+                "WINDOW"  -> "Ventana"
+                "DOOR"    -> "Puerta"
+                "RAILING" -> "Baranda"
+                else      -> "Otro"
+            }
+
+            // Card outer table: full width, slight top margin
+            val card = Table(UnitValue.createPercentArray(floatArrayOf(100f)))
+                .setWidth(UnitValue.createPercentValue(100f))
+                .setMarginTop(8f)
+
+            // Header row: "V01 - Ventana"
+            val headerCell = Cell()
+                .add(Paragraph("$itemCode - $typeLabel").setBold().setFontSize(10f).setFontColor(com.itextpdf.kernel.colors.ColorConstants.WHITE))
+                .setBackgroundColor(headerColor)
+                .setPadding(4f)
+                .setBorder(null)
+            card.addCell(headerCell)
+
+            // Content row: diagram (left) + info table (right)
+            val contentTable = Table(UnitValue.createPercentArray(floatArrayOf(45f, 55f)))
+                .setWidth(UnitValue.createPercentValue(100f))
+
+            // Left cell: diagram
+            val diagram = diagramDrawer.createDiagram(item, pdfDocument)
+            val diagramCell = Cell().setBorder(SolidBorder(0.5f)).setPadding(6f)
+            if (diagram != null) {
+                diagram.setMaxWidth(UnitValue.createPercentValue(100f))
+                diagramCell.add(diagram)
+            } else {
+                diagramCell.add(Paragraph("Sin dimensiones").setFontSize(9f))
+            }
+            contentTable.addCell(diagramCell)
+
+            // Right cell: specs + values table
+            val infoCell = Cell().setBorder(SolidBorder(0.5f)).setPadding(6f).setVerticalAlignment(VerticalAlignment.TOP)
+
+            // Specs sub-table
+            val specsTable = Table(UnitValue.createPercentArray(floatArrayOf(40f, 60f)))
+                .setWidth(UnitValue.createPercentValue(100f))
+                .setMarginBottom(6f)
+
+            fun specRow(label: String, value: String) {
+                specsTable.addCell(Cell().add(Paragraph(label).setBold().setFontSize(9f)).setBackgroundColor(ColorConstants.LIGHT_GRAY).setPadding(3f))
+                specsTable.addCell(Cell().add(Paragraph(value).setFontSize(9f)).setPadding(3f))
+            }
+
+            specRow("Dimensiones:", "${item.widthMm}mm x ${item.heightMm}mm")
+            if (item.description.isNotEmpty()) specRow("Descripción:", item.description)
+            if (item.specifications.isNotEmpty()) specRow("Perfil:", item.specifications)
+            if (item.panelCount > 0 && item.type in listOf("WINDOW", "DOOR")) specRow("Hojas:", item.panelCount.toString())
+            if (item.notes.isNotEmpty()) specRow("Notas:", item.notes)
+
+            infoCell.add(specsTable)
+
+            // Values sub-table
+            val valuesTable = Table(UnitValue.createPercentArray(floatArrayOf(40f, 30f, 30f)))
+                .setWidth(UnitValue.createPercentValue(100f))
+
+            listOf("", "Cantidad", "Valor").forEach { h ->
+                valuesTable.addCell(
+                    Cell().add(Paragraph(h).setBold().setFontSize(9f))
+                        .setBackgroundColor(headerColor)
+                        .setFontColor(com.itextpdf.kernel.colors.ColorConstants.WHITE)
+                        .setPadding(3f)
+                )
+            }
+            valuesTable.addCell(Cell().add(Paragraph("Precio Unit.").setFontSize(9f)).setPadding(3f))
+            valuesTable.addCell(Cell().add(Paragraph(item.quantity.toString()).setFontSize(9f).setTextAlignment(TextAlignment.CENTER)).setPadding(3f))
+            valuesTable.addCell(Cell().add(Paragraph(formatCurrency(item.unitPrice)).setFontSize(9f).setTextAlignment(TextAlignment.RIGHT)).setPadding(3f))
+
+            val subtotal = item.quantity * item.unitPrice
+            valuesTable.addCell(Cell().add(Paragraph("Subtotal").setBold().setFontSize(9f)).setPadding(3f))
+            valuesTable.addCell(Cell().add(Paragraph("").setFontSize(9f)).setPadding(3f))
+            valuesTable.addCell(Cell().add(Paragraph(formatCurrency(subtotal)).setBold().setFontSize(9f).setTextAlignment(TextAlignment.RIGHT)).setPadding(3f))
+
+            infoCell.add(valuesTable)
+            contentTable.addCell(infoCell)
+
+            card.addCell(Cell().add(contentTable).setBorder(null).setPadding(0f))
+            document.add(card)
+        }
     }
 
     private fun formatDate(timestamp: Long): String =
