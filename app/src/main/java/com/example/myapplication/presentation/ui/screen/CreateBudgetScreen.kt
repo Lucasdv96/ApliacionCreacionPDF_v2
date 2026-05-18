@@ -28,9 +28,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -48,9 +51,12 @@ fun CreateBudgetScreen(
     val uiState by viewModel.uiState.collectAsState()
     val clientSuggestions by viewModel.clientSuggestions.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showClientDropdown by remember { mutableStateOf(false) }
 
-    if (uiState.savedBudgetId != null) {
-        onBudgetCreated(uiState.savedBudgetId!!)
+    LaunchedEffect(uiState.savedBudgetId) {
+        if (uiState.savedBudgetId != null) {
+            onBudgetCreated(uiState.savedBudgetId!!)
+        }
     }
 
     Scaffold(
@@ -76,33 +82,42 @@ fun CreateBudgetScreen(
         ) {
             SectionTitle("DATOS DEL CLIENTE")
 
-            Box(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 FormTextField(
                     label = "Nombre del Cliente *",
                     value = uiState.clientName,
-                    onValueChange = viewModel::updateClientName,
+                    onValueChange = {
+                        viewModel.updateClientName(it)
+                        showClientDropdown = true
+                    },
                     error = uiState.validationErrors["clientName"],
                     enabled = !uiState.isSaving
                 )
-                DropdownMenu(
-                    expanded = clientSuggestions.isNotEmpty() && !uiState.isExistingClientSelected,
-                    onDismissRequest = {}
-                ) {
-                    clientSuggestions.take(5).forEach { client ->
-                        DropdownMenuItem(
-                            text = {
-                                Column {
-                                    Text(client.name, fontWeight = FontWeight.Medium)
-                                    val location = listOf(client.city, client.province)
-                                        .filter { it.isNotBlank() }
-                                        .joinToString(", ")
-                                    if (location.isNotBlank()) {
-                                        Text(location, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (showClientDropdown && clientSuggestions.isNotEmpty() && !uiState.isExistingClientSelected) {
+                    androidx.compose.material3.Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        clientSuggestions.take(5).forEach { client ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(client.name, fontWeight = FontWeight.Medium)
+                                        val location = listOf(client.city, client.province)
+                                            .filter { it.isNotBlank() }
+                                            .joinToString(", ")
+                                        if (location.isNotBlank()) {
+                                            Text(location, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                     }
+                                },
+                                onClick = {
+                                    viewModel.selectExistingClient(client)
+                                    showClientDropdown = false
                                 }
-                            },
-                            onClick = { viewModel.selectExistingClient(client) }
-                        )
+                            )
+                            androidx.compose.material3.Divider()
+                        }
                     }
                 }
             }

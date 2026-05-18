@@ -4,12 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.db.entity.BudgetEntity
+import com.example.myapplication.data.repository.BudgetItemRepository
 import com.example.myapplication.data.repository.BudgetRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -38,8 +40,11 @@ data class BudgetListUiState(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BudgetListViewModel(
-    private val budgetRepository: BudgetRepository
+    private val budgetRepository: BudgetRepository,
+    private val budgetItemRepository: BudgetItemRepository
 ) : ViewModel() {
+
+    val duplicatedBudgetId = MutableStateFlow<Int?>(null)
 
     private val _filterState = MutableStateFlow(FilterState())
     private val _isLoading = MutableStateFlow(false)
@@ -121,16 +126,45 @@ class BudgetListViewModel(
         }
     }
 
+    fun duplicateBudget(budgetId: Int) {
+        viewModelScope.launch {
+            try {
+                val budget = budgetRepository.getBudgetById(budgetId) ?: return@launch
+                val items = budgetItemRepository.getItemsByBudget(budgetId).first()
+                val newNumber = budgetRepository.generateBudgetNumber(budget.project)
+                val newBudget = budget.copy(
+                    id = 0,
+                    budgetNumber = newNumber,
+                    status = "DRAFT",
+                    createdDate = System.currentTimeMillis(),
+                    modifiedDate = System.currentTimeMillis()
+                )
+                val newBudgetId = budgetRepository.createBudget(newBudget).toInt()
+                items.forEach { budgetItemRepository.createItem(it.copy(id = 0, budgetId = newBudgetId)) }
+                duplicatedBudgetId.value = newBudgetId
+            } catch (e: Exception) {
+                _error.value = "Error al duplicar presupuesto: ${e.message}"
+            }
+        }
+    }
+
+    fun clearDuplicatedBudgetId() {
+        duplicatedBudgetId.value = null
+    }
+
     fun clearError() {
         _error.value = null
     }
 
     companion object {
-        fun provideFactory(budgetRepository: BudgetRepository): ViewModelProvider.Factory =
+        fun provideFactory(
+            budgetRepository: BudgetRepository,
+            budgetItemRepository: BudgetItemRepository
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return BudgetListViewModel(budgetRepository) as T
+                    return BudgetListViewModel(budgetRepository, budgetItemRepository) as T
                 }
             }
     }

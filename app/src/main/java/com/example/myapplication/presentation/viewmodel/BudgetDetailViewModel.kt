@@ -30,6 +30,7 @@ data class BudgetDetailUiState(
     val pdfPath: String? = null,
     val showShareOptions: Boolean = false,
     val lastGeneratedPdfPath: String? = null,
+    val duplicatedBudgetId: Int? = null,
     val editProjectName: String = "",
     val editLaborCost: String = "",
     val editClientName: String = "",
@@ -38,7 +39,8 @@ data class BudgetDetailUiState(
     val editClientCity: String = "",
     val editClientProvince: String = "",
     val editClientPhone: String = "",
-    val editClientEmail: String = ""
+    val editClientEmail: String = "",
+    val notesInput: String = ""
 )
 
 class BudgetDetailViewModel(
@@ -83,6 +85,7 @@ class BudgetDetailViewModel(
                     budget = budget,
                     client = client,
                     isLoading = false,
+                    notesInput = budget?.notes ?: "",
                     error = if (budget == null) "Presupuesto no encontrado" else null
                 )
             } catch (e: Exception) {
@@ -132,21 +135,22 @@ class BudgetDetailViewModel(
         }
     }
 
-    fun updateBudgetNotes(notes: String) {
+    fun updateNotesInput(notes: String) {
+        _uiState.value = _uiState.value.copy(notesInput = notes)
+    }
+
+    fun saveNotes() {
         val currentBudget = _uiState.value.budget ?: return
+        val notes = _uiState.value.notesInput
+        if (notes == currentBudget.notes) return
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(isSaving = true)
                 val updatedBudget = currentBudget.copy(
                     notes = notes,
                     modifiedDate = System.currentTimeMillis()
                 )
                 budgetRepository.updateBudget(updatedBudget)
-                _uiState.value = _uiState.value.copy(
-                    budget = updatedBudget,
-                    isSaving = false,
-                    error = null
-                )
+                _uiState.value = _uiState.value.copy(budget = updatedBudget, error = null)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = "Error al guardar notas: ${e.message}",
@@ -391,6 +395,35 @@ class BudgetDetailViewModel(
         _uiState.value = _uiState.value.copy(showShareOptions = false)
     }
 
+    fun duplicateBudget() {
+        val budget = _uiState.value.budget ?: return
+        val items = _uiState.value.items
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isSaving = true, error = null)
+                val newNumber = budgetRepository.generateBudgetNumber(budget.project)
+                val newBudget = budget.copy(
+                    id = 0,
+                    budgetNumber = newNumber,
+                    status = "DRAFT",
+                    createdDate = System.currentTimeMillis(),
+                    modifiedDate = System.currentTimeMillis()
+                )
+                val newBudgetId = budgetRepository.createBudget(newBudget).toInt()
+                items.forEach { item ->
+                    budgetItemRepository.createItem(item.copy(id = 0, budgetId = newBudgetId))
+                }
+                _uiState.value = _uiState.value.copy(isSaving = false, duplicatedBudgetId = newBudgetId)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    error = "Error al duplicar: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun clearDuplicatedBudgetId() { _uiState.value = _uiState.value.copy(duplicatedBudgetId = null) }
     fun dismissShareOptions() { _uiState.value = _uiState.value.copy(showShareOptions = false) }
     fun clearPdfPath() { _uiState.value = _uiState.value.copy(pdfPath = null) }
     fun clearError() { _uiState.value = _uiState.value.copy(error = null) }
