@@ -110,7 +110,7 @@ class PdfGeneratorService(private val context: Context) {
     }
 
     private fun addCompanyHeader(document: Document, settings: SettingsEntity) {
-        val headerTable = Table(UnitValue.createPercentArray(floatArrayOf(55f, 45f)))
+        val headerTable = Table(UnitValue.createPercentArray(floatArrayOf(45f, 55f)))
         headerTable.setWidth(UnitValue.createPercentValue(100f))
 
         val companyInfo = StringBuilder()
@@ -128,7 +128,7 @@ class PdfGeneratorService(private val context: Context) {
         val logoFile = if (settings.logoPath.isNotEmpty()) File(settings.logoPath) else null
         if (logoFile != null && logoFile.exists()) {
             val imageData = ImageDataFactory.create(logoFile.absolutePath)
-            val image = Image(imageData).setMaxHeight(200f).setMaxWidth(280f).setAutoScale(false)
+            val image = Image(imageData).setMaxHeight(300f).setMaxWidth(420f).setAutoScale(false)
             headerTable.addCell(
                 Cell().add(image).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
             )
