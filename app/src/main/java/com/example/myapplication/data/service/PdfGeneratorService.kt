@@ -113,17 +113,14 @@ class PdfGeneratorService(private val context: Context) {
         val headerTable = Table(UnitValue.createPercentArray(floatArrayOf(45f, 55f)))
         headerTable.setWidth(UnitValue.createPercentValue(100f))
 
-        val companyInfo = StringBuilder()
-        companyInfo.append("${settings.companyName}\n")
-        if (settings.companyCuit.isNotEmpty()) companyInfo.append("CUIT: ${settings.companyCuit}\n")
-        if (settings.companyAddress.isNotEmpty()) companyInfo.append("${settings.companyAddress}\n")
-        if (settings.companyCity.isNotEmpty()) companyInfo.append("${settings.companyCity}")
-        if (settings.companyPhone.isNotEmpty()) companyInfo.append("\nTeléfono: ${settings.companyPhone}\n")
-        if (settings.companyEmail.isNotEmpty()) companyInfo.append("Email: ${settings.companyEmail}")
-
-        headerTable.addCell(
-            Cell().add(Paragraph(companyInfo.toString()).setBold().setFontSize(12f)).setBorder(null)
-        )
+        val infoCell = Cell().setBorder(null).setVerticalAlignment(VerticalAlignment.MIDDLE)
+        infoCell.add(Paragraph(settings.companyName).setBold().setFontSize(18f).setMarginBottom(4f))
+        if (settings.companyCuit.isNotEmpty())   infoCell.add(Paragraph("CUIT: ${settings.companyCuit}").setFontSize(13f))
+        if (settings.companyAddress.isNotEmpty()) infoCell.add(Paragraph(settings.companyAddress).setFontSize(13f))
+        if (settings.companyCity.isNotEmpty())   infoCell.add(Paragraph(settings.companyCity).setFontSize(13f))
+        if (settings.companyPhone.isNotEmpty())  infoCell.add(Paragraph("Teléfono: ${settings.companyPhone}").setFontSize(13f))
+        if (settings.companyEmail.isNotEmpty())  infoCell.add(Paragraph("Email: ${settings.companyEmail}").setFontSize(13f))
+        headerTable.addCell(infoCell)
 
         val logoFile = if (settings.logoPath.isNotEmpty()) File(settings.logoPath) else null
         if (logoFile != null && logoFile.exists()) {
