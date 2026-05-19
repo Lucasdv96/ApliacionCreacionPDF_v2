@@ -74,37 +74,39 @@ class PdfGeneratorService(private val context: Context) {
             document.add(Paragraph(settings.termsConditions).setFontSize(10f))
         }
 
+        document.flush()
         addWatermarks(pdfDocument)
         document.close()
         return pdfFile.absolutePath
     }
 
     private fun addWatermarks(pdfDocument: PdfDocument) {
-        val logoBytes = try {
-            context.resources.openRawResource(
-                context.resources.getIdentifier("logo_watermark", "raw", context.packageName)
-            ).use { it.readBytes() }
-        } catch (e: Exception) { return }
+        try {
+            val resId = context.resources.getIdentifier("logo_watermark", "raw", context.packageName)
+            if (resId == 0) return
+            val logoBytes = context.resources.openRawResource(resId).use { it.readBytes() }
+            val imageData = ImageDataFactory.create(logoBytes)
 
-        val imageData = ImageDataFactory.create(logoBytes)
+            for (i in 1..pdfDocument.numberOfPages) {
+                try {
+                    val page = pdfDocument.getPage(i)
+                    val pageSize = page.pageSize
+                    val canvas = PdfCanvas(page.newContentStreamBefore(), page.resources, pdfDocument)
 
-        for (i in 1..pdfDocument.numberOfPages) {
-            val page = pdfDocument.getPage(i)
-            val pageSize = page.pageSize
-            val canvas = PdfCanvas(page.newContentStreamBefore(), page.resources, pdfDocument)
+                    val targetW = pageSize.width * 0.60f
+                    val targetH = imageData.height.toFloat() * (targetW / imageData.width.toFloat())
+                    val x = (pageSize.width - targetW) / 2f
+                    val y = (pageSize.height - targetH) / 2f
 
-            val targetW = pageSize.width * 0.60f
-            val targetH = imageData.height.toFloat() * (targetW / imageData.width.toFloat())
-            val x = (pageSize.width - targetW) / 2f
-            val y = (pageSize.height - targetH) / 2f
-
-            val gs = PdfExtGState().setFillOpacity(0.07f).setStrokeOpacity(0.07f)
-            canvas.saveState()
-            canvas.setExtGState(gs)
-            canvas.addImageFittedIntoRectangle(imageData, Rectangle(x, y, targetW, targetH), false)
-            canvas.restoreState()
-            canvas.release()
-        }
+                    val gs = PdfExtGState().setFillOpacity(0.07f).setStrokeOpacity(0.07f)
+                    canvas.saveState()
+                    canvas.setExtGState(gs)
+                    canvas.addImageFittedIntoRectangle(imageData, Rectangle(x, y, targetW, targetH), false)
+                    canvas.restoreState()
+                    canvas.release()
+                } catch (_: Exception) { }
+            }
+        } catch (_: Exception) { }
     }
 
     private fun addCompanyHeader(document: Document, settings: SettingsEntity) {
