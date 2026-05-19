@@ -98,7 +98,7 @@ class PdfGeneratorService(private val context: Context) {
                     val x = (pageSize.width - targetW) / 2f
                     val y = (pageSize.height - targetH) / 2f
 
-                    val gs = PdfExtGState().setFillOpacity(0.07f).setStrokeOpacity(0.07f)
+                    val gs = PdfExtGState().setFillOpacity(0.12f).setStrokeOpacity(0.12f)
                     canvas.saveState()
                     canvas.setExtGState(gs)
                     canvas.addImageFittedIntoRectangle(imageData, Rectangle(x, y, targetW, targetH), false)
