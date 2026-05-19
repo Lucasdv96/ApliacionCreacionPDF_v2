@@ -222,15 +222,12 @@ class TechnicalDiagramDrawer {
         // Top handrail
         canvas.rectangle(x.toDouble(), (y + h - railH).toDouble(), w.toDouble(), railH.toDouble())
         canvas.fillStroke()
-        // Bottom rail
-        canvas.rectangle(x.toDouble(), y.toDouble(), w.toDouble(), railH.toDouble())
-        canvas.fillStroke()
 
         // Balusters — thin hollow rectangles evenly spaced between posts
         val innerX = x + postW
         val innerW = w - postW * 2f
-        val innerY = y + railH
-        val innerH = h - railH * 2f
+        val innerY = y
+        val innerH = h - railH
         val count  = (innerW / 10f).toInt().coerceAtLeast(1)
 
         canvas.setFillColor(com.itextpdf.kernel.colors.DeviceGray(0f))
