@@ -98,7 +98,7 @@ fun AddItemScreen(
                         expanded = showTypeMenu,
                         onDismissRequest = { showTypeMenu = false }
                     ) {
-                        listOf("WINDOW", "DOOR", "RAILING", "LABOR", "OTHER").forEach { type ->
+                        listOf("WINDOW", "DOOR", "RAILING", "OTHER").forEach { type ->
                             val displayName = when (type) {
                                 "WINDOW" -> "Ventana"
                                 "DOOR" -> "Puerta"
