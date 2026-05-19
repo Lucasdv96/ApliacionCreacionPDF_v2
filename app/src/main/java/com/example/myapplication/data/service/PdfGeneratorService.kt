@@ -8,8 +8,11 @@ import com.example.myapplication.data.db.entity.SettingsEntity
 import com.itextpdf.io.image.ImageDataFactory
 import com.itextpdf.kernel.colors.ColorConstants
 import com.itextpdf.kernel.colors.DeviceRgb
+import com.itextpdf.kernel.geom.Rectangle
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas
+import com.itextpdf.kernel.pdf.extgstate.PdfExtGState
 import com.itextpdf.layout.Document
 import com.itextpdf.layout.borders.SolidBorder
 import com.itextpdf.layout.element.Cell
@@ -71,8 +74,37 @@ class PdfGeneratorService(private val context: Context) {
             document.add(Paragraph(settings.termsConditions).setFontSize(10f))
         }
 
+        addWatermarks(pdfDocument)
         document.close()
         return pdfFile.absolutePath
+    }
+
+    private fun addWatermarks(pdfDocument: PdfDocument) {
+        val logoBytes = try {
+            context.resources.openRawResource(
+                context.resources.getIdentifier("logo_watermark", "raw", context.packageName)
+            ).use { it.readBytes() }
+        } catch (e: Exception) { return }
+
+        val imageData = ImageDataFactory.create(logoBytes)
+
+        for (i in 1..pdfDocument.numberOfPages) {
+            val page = pdfDocument.getPage(i)
+            val pageSize = page.pageSize
+            val canvas = PdfCanvas(page.newContentStreamBefore(), page.resources, pdfDocument)
+
+            val targetW = pageSize.width * 0.60f
+            val targetH = imageData.height.toFloat() * (targetW / imageData.width.toFloat())
+            val x = (pageSize.width - targetW) / 2f
+            val y = (pageSize.height - targetH) / 2f
+
+            val gs = PdfExtGState().setFillOpacity(0.07f).setStrokeOpacity(0.07f)
+            canvas.saveState()
+            canvas.setExtGState(gs)
+            canvas.addImageFittedIntoRectangle(imageData, Rectangle(x, y, targetW, targetH), false)
+            canvas.restoreState()
+            canvas.release()
+        }
     }
 
     private fun addCompanyHeader(document: Document, settings: SettingsEntity) {
