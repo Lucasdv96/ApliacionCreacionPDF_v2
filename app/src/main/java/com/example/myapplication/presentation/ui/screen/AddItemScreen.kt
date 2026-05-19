@@ -13,13 +13,17 @@ import com.example.myapplication.utils.parseAmount
 import com.example.myapplication.utils.toInputString
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -187,6 +191,50 @@ fun AddItemScreen(
                         onValueChange = { viewModel.updatePanelCount(it.toIntOrNull() ?: 0) },
                         enabled = !uiState.isSaving
                     )
+
+                    if (uiState.type == "WINDOW" && uiState.panelCount > 0) {
+                        val typeList = uiState.panelTypes.split(",")
+                        Text(
+                            text = "Tipo por hoja:",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            for (i in 0 until uiState.panelCount) {
+                                val isFijo = typeList.getOrElse(i) { "M" } == "F"
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(text = "H${i + 1}", fontSize = 11.sp)
+                                    Button(
+                                        onClick = { viewModel.togglePanelType(i) },
+                                        enabled = !uiState.isSaving,
+                                        modifier = Modifier.size(width = 56.dp, height = 36.dp),
+                                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (isFijo)
+                                                MaterialTheme.colorScheme.secondaryContainer
+                                            else
+                                                MaterialTheme.colorScheme.primaryContainer,
+                                            contentColor = if (isFijo)
+                                                MaterialTheme.colorScheme.onSecondaryContainer
+                                            else
+                                                MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    ) {
+                                        Text(
+                                            text = if (isFijo) "FIJO" else "MÓV",
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

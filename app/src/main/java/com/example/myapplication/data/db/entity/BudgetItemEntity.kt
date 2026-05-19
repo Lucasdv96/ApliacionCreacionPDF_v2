@@ -28,5 +28,6 @@ data class BudgetItemEntity(
     val notes: String = "",
     val widthMm: Int = 0,
     val heightMm: Int = 0,
-    val panelCount: Int = 0
+    val panelCount: Int = 0,
+    val panelTypes: String = ""
 )

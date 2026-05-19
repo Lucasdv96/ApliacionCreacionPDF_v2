@@ -40,7 +40,7 @@ class TechnicalDiagramDrawer {
         val originY = MARGIN_BOTTOM + (DRAW_AREA_H - drawH) / 2f
 
         when (item.type) {
-            "WINDOW" -> drawWindow(canvas, originX, originY, drawW, drawH, item.panelCount.coerceAtLeast(1))
+            "WINDOW" -> drawWindow(canvas, originX, originY, drawW, drawH, item.panelCount.coerceAtLeast(1), item.panelTypes)
             "DOOR"   -> drawDoor(canvas, originX, originY, drawW, drawH, item.panelCount.coerceAtLeast(1))
             "RAILING" -> drawRailing(canvas, originX, originY, drawW, drawH)
         }
@@ -53,8 +53,12 @@ class TechnicalDiagramDrawer {
 
     // ── WINDOW ────────────────────────────────────────────────────────────────
 
-    private fun drawWindow(canvas: PdfCanvas, x: Float, y: Float, w: Float, h: Float, panels: Int) {
+    private fun drawWindow(
+        canvas: PdfCanvas, x: Float, y: Float, w: Float, h: Float,
+        panels: Int, panelTypes: String = ""
+    ) {
         val inset = 3f
+        val typeList = panelTypes.split(",")
 
         // Outer frame
         canvas.setLineWidth(2f)
@@ -79,14 +83,31 @@ class TechnicalDiagramDrawer {
             canvas.stroke()
         }
 
-        // Sliding arrows — alternating directions per panel
+        // Per-panel indicator: F = cross (✕), M = sliding arrow
         canvas.setLineWidth(0.5f)
         for (i in 0 until panels) {
-            val panelCenterX = x + panelW * i + panelW / 2f
-            val arrowY = y + h / 2f
-            val dir = if (i % 2 == 0) 1f else -1f
-            drawSlidingArrow(canvas, panelCenterX, arrowY, panelW * 0.3f, dir)
+            val px = x + panelW * i
+            val isFijo = typeList.getOrElse(i) { "M" } == "F"
+            if (isFijo) {
+                drawFixedCross(canvas, px + inset, y + inset, panelW - inset * 2, h - inset * 2)
+            } else {
+                val panelCenterX = px + panelW / 2f
+                val arrowY = y + h / 2f
+                val dir = if (i % 2 == 0) 1f else -1f
+                drawSlidingArrow(canvas, panelCenterX, arrowY, panelW * 0.3f, dir)
+            }
         }
+    }
+
+    private fun drawFixedCross(canvas: PdfCanvas, x: Float, y: Float, w: Float, h: Float) {
+        val margin = minOf(w, h) * 0.15f
+        canvas.setLineWidth(0.6f)
+        canvas.moveTo((x + margin).toDouble(), (y + margin).toDouble())
+        canvas.lineTo((x + w - margin).toDouble(), (y + h - margin).toDouble())
+        canvas.stroke()
+        canvas.moveTo((x + w - margin).toDouble(), (y + margin).toDouble())
+        canvas.lineTo((x + margin).toDouble(), (y + h - margin).toDouble())
+        canvas.stroke()
     }
 
     private fun drawSlidingArrow(canvas: PdfCanvas, cx: Float, cy: Float, half: Float, dir: Float) {
