@@ -76,7 +76,7 @@ fun AppNavGraph(
                 onNavigateToBudgetDetail = { budgetId ->
                     navController.navigate(Destination.BudgetDetail.createRoute(budgetId))
                 },
-                onNavigateToHome = { navController.popBackStack() },
+                onNavigateToHome = { navController.navigateUp() },
                 onNavigateToDuplicatedBudget = { budgetId ->
                     navController.navigate(Destination.BudgetDetail.createRoute(budgetId))
                 }
@@ -89,7 +89,7 @@ fun AppNavGraph(
             )
             CreateBudgetScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { navController.navigateUp() },
                 onBudgetCreated = { budgetId ->
                     navController.navigate(Destination.BudgetDetail.createRoute(budgetId)) {
                         popUpTo(Destination.CreateBudget.route) { inclusive = true }
@@ -113,7 +113,7 @@ fun AppNavGraph(
             )
             BudgetDetailScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { navController.navigateUp() },
                 onNavigateToAddItem = { bId ->
                     navController.navigate(Destination.AddItem.createRoute(bId))
                 },
@@ -123,7 +123,7 @@ fun AppNavGraph(
                 onNavigateToDuplicatedBudget = { newBudgetId ->
                     navController.navigate(Destination.BudgetDetail.createRoute(newBudgetId))
                 },
-                onBudgetDeleted = { navController.popBackStack() }
+                onBudgetDeleted = { navController.navigateUp() }
             )
         }
 
@@ -134,8 +134,8 @@ fun AppNavGraph(
             )
             AddItemScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
-                onItemAdded = { navController.popBackStack() }
+                onNavigateBack = { navController.navigateUp() },
+                onItemAdded = { navController.navigateUp() }
             )
         }
 
@@ -147,8 +147,8 @@ fun AppNavGraph(
             )
             AddItemScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
-                onItemAdded = { navController.popBackStack() }
+                onNavigateBack = { navController.navigateUp() },
+                onItemAdded = { navController.navigateUp() }
             )
         }
 
@@ -158,7 +158,7 @@ fun AppNavGraph(
             )
             ClientListScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { navController.navigateUp() },
                 onNavigateToEditClient = { clientId ->
                     navController.navigate("edit_client/$clientId")
                 }
@@ -172,7 +172,7 @@ fun AppNavGraph(
             )
             EditClientScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.navigateUp() }
             )
         }
 
@@ -182,7 +182,7 @@ fun AppNavGraph(
             )
             SettingsScreen(
                 viewModel = settingsViewModel,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.navigateUp() }
             )
         }
     }

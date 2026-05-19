@@ -21,6 +21,7 @@ data class AddItemUiState(
     val widthMm: Int = 0,
     val heightMm: Int = 0,
     val panelCount: Int = 0,
+    val panelTypes: String = "",
     val isSaving: Boolean = false,
     val error: String? = null,
     val itemSaved: Boolean = false,
@@ -61,6 +62,7 @@ class AddItemViewModel(
                         widthMm = item.widthMm,
                         heightMm = item.heightMm,
                         panelCount = item.panelCount,
+                        panelTypes = item.panelTypes,
                         isEditMode = true
                     )
                 }
@@ -79,7 +81,20 @@ class AddItemViewModel(
     fun updateNotes(notes: String) { _uiState.value = _uiState.value.copy(notes = notes) }
     fun updateWidthMm(value: Int) { _uiState.value = _uiState.value.copy(widthMm = if (value >= 0) value else 0) }
     fun updateHeightMm(value: Int) { _uiState.value = _uiState.value.copy(heightMm = if (value >= 0) value else 0) }
-    fun updatePanelCount(value: Int) { _uiState.value = _uiState.value.copy(panelCount = if (value >= 0) value else 0) }
+    fun updatePanelCount(value: Int) {
+        val count = if (value >= 0) value else 0
+        val types = List(count) { i ->
+            _uiState.value.panelTypes.split(",").getOrNull(i) ?: "M"
+        }.joinToString(",")
+        _uiState.value = _uiState.value.copy(panelCount = count, panelTypes = types)
+    }
+
+    fun togglePanelType(index: Int) {
+        val list = _uiState.value.panelTypes.split(",").toMutableList()
+        while (list.size <= index) list.add("M")
+        list[index] = if (list[index] == "F") "M" else "F"
+        _uiState.value = _uiState.value.copy(panelTypes = list.joinToString(","))
+    }
 
     fun saveItem() {
         viewModelScope.launch {
@@ -98,7 +113,8 @@ class AddItemViewModel(
                         notes = s.notes,
                         widthMm = s.widthMm,
                         heightMm = s.heightMm,
-                        panelCount = s.panelCount
+                        panelCount = s.panelCount,
+                        panelTypes = s.panelTypes
                     )
                     budgetItemRepository.updateItem(updated)
                 } else {
@@ -113,7 +129,8 @@ class AddItemViewModel(
                         notes = s.notes,
                         widthMm = s.widthMm,
                         heightMm = s.heightMm,
-                        panelCount = s.panelCount
+                        panelCount = s.panelCount,
+                        panelTypes = s.panelTypes
                     )
                     budgetItemRepository.createItem(item)
                 }

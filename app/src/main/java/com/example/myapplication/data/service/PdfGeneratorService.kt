@@ -8,8 +8,11 @@ import com.example.myapplication.data.db.entity.SettingsEntity
 import com.itextpdf.io.image.ImageDataFactory
 import com.itextpdf.kernel.colors.ColorConstants
 import com.itextpdf.kernel.colors.DeviceRgb
+import com.itextpdf.kernel.geom.Rectangle
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas
+import com.itextpdf.kernel.pdf.extgstate.PdfExtGState
 import com.itextpdf.layout.Document
 import com.itextpdf.layout.borders.SolidBorder
 import com.itextpdf.layout.element.Cell
@@ -48,13 +51,13 @@ class PdfGeneratorService(private val context: Context) {
         document.add(Paragraph("\n"))
         addBudgetInfo(document, budget, client)
         document.add(Paragraph("\n"))
-        addItemsTable(document, items)
-
         val itemsWithDimensions = items.filter { it.widthMm > 0 && it.heightMm > 0 }
         if (itemsWithDimensions.isNotEmpty()) {
-            document.add(Paragraph("\n"))
             addTechnicalDetails(document, pdfDocument, itemsWithDimensions)
+            document.add(Paragraph("\n"))
         }
+
+        addItemsTable(document, items)
 
         document.add(Paragraph("\n"))
         addPriceSummary(document, items, budget)
@@ -71,30 +74,58 @@ class PdfGeneratorService(private val context: Context) {
             document.add(Paragraph(settings.termsConditions).setFontSize(10f))
         }
 
+        document.flush()
+        addWatermarks(pdfDocument)
         document.close()
         return pdfFile.absolutePath
     }
 
+    private fun addWatermarks(pdfDocument: PdfDocument) {
+        try {
+            val resId = context.resources.getIdentifier("logo_watermark", "raw", context.packageName)
+            if (resId == 0) return
+            val logoBytes = context.resources.openRawResource(resId).use { it.readBytes() }
+            val imageData = ImageDataFactory.create(logoBytes)
+
+            for (i in 1..pdfDocument.numberOfPages) {
+                try {
+                    val page = pdfDocument.getPage(i)
+                    val pageSize = page.pageSize
+                    val canvas = PdfCanvas(page.newContentStreamBefore(), page.resources, pdfDocument)
+
+                    val targetW = pageSize.width * 0.60f
+                    val targetH = imageData.height.toFloat() * (targetW / imageData.width.toFloat())
+                    val x = (pageSize.width - targetW) / 2f
+                    val y = (pageSize.height - targetH) / 2f
+
+                    val gs = PdfExtGState().setFillOpacity(0.12f).setStrokeOpacity(0.12f)
+                    canvas.saveState()
+                    canvas.setExtGState(gs)
+                    canvas.addImageFittedIntoRectangle(imageData, Rectangle(x, y, targetW, targetH), false)
+                    canvas.restoreState()
+                    canvas.release()
+                } catch (_: Exception) { }
+            }
+        } catch (_: Exception) { }
+    }
+
     private fun addCompanyHeader(document: Document, settings: SettingsEntity) {
-        val headerTable = Table(UnitValue.createPercentArray(floatArrayOf(70f, 30f)))
+        val headerTable = Table(UnitValue.createPercentArray(floatArrayOf(45f, 55f)))
         headerTable.setWidth(UnitValue.createPercentValue(100f))
 
-        val companyInfo = StringBuilder()
-        companyInfo.append("${settings.companyName}\n")
-        if (settings.companyCuit.isNotEmpty()) companyInfo.append("CUIT: ${settings.companyCuit}\n")
-        if (settings.companyAddress.isNotEmpty()) companyInfo.append("${settings.companyAddress}\n")
-        if (settings.companyCity.isNotEmpty()) companyInfo.append("${settings.companyCity}")
-        if (settings.companyPhone.isNotEmpty()) companyInfo.append("\nTeléfono: ${settings.companyPhone}\n")
-        if (settings.companyEmail.isNotEmpty()) companyInfo.append("Email: ${settings.companyEmail}")
-
-        headerTable.addCell(
-            Cell().add(Paragraph(companyInfo.toString()).setBold().setFontSize(12f)).setBorder(null)
-        )
+        val infoCell = Cell().setBorder(null).setVerticalAlignment(VerticalAlignment.MIDDLE)
+        infoCell.add(Paragraph(settings.companyName).setBold().setFontSize(18f).setMarginBottom(4f))
+        if (settings.companyCuit.isNotEmpty())   infoCell.add(Paragraph("CUIT: ${settings.companyCuit}").setFontSize(13f))
+        if (settings.companyAddress.isNotEmpty()) infoCell.add(Paragraph(settings.companyAddress).setFontSize(13f))
+        if (settings.companyCity.isNotEmpty())   infoCell.add(Paragraph(settings.companyCity).setFontSize(13f))
+        if (settings.companyPhone.isNotEmpty())  infoCell.add(Paragraph("Teléfono: ${settings.companyPhone}").setFontSize(13f))
+        if (settings.companyEmail.isNotEmpty())  infoCell.add(Paragraph("Email: ${settings.companyEmail}").setFontSize(13f))
+        headerTable.addCell(infoCell)
 
         val logoFile = if (settings.logoPath.isNotEmpty()) File(settings.logoPath) else null
         if (logoFile != null && logoFile.exists()) {
             val imageData = ImageDataFactory.create(logoFile.absolutePath)
-            val image = Image(imageData).setMaxHeight(140f).setMaxWidth(200f).setAutoScale(false)
+            val image = Image(imageData).setMaxHeight(300f).setMaxWidth(420f).setAutoScale(false)
             headerTable.addCell(
                 Cell().add(image).setTextAlignment(TextAlignment.RIGHT).setBorder(null)
             )
@@ -211,6 +242,14 @@ class PdfGeneratorService(private val context: Context) {
         pdfDocument: PdfDocument,
         items: List<BudgetItemEntity>
     ) {
+        val logoImageData: com.itextpdf.io.image.ImageData? = try {
+            val resId = context.resources.getIdentifier("logo_watermark", "raw", context.packageName)
+            if (resId != 0) {
+                val bytes = context.resources.openRawResource(resId).use { it.readBytes() }
+                ImageDataFactory.create(bytes)
+            } else null
+        } catch (_: Exception) { null }
+
         val headerColor = DeviceRgb(0x1a, 0x4f, 0x8a)
 
         document.add(
@@ -255,7 +294,7 @@ class PdfGeneratorService(private val context: Context) {
                 .setWidth(UnitValue.createPercentValue(100f))
 
             // Left cell: diagram
-            val diagram = diagramDrawer.createDiagram(item, pdfDocument)
+            val diagram = diagramDrawer.createDiagram(item, pdfDocument, logoImageData)
             val diagramCell = Cell().setBorder(SolidBorder(0.5f)).setPadding(6f)
             if (diagram != null) {
                 diagram.setMaxWidth(UnitValue.createPercentValue(100f))

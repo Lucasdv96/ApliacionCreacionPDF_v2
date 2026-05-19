@@ -23,13 +23,36 @@ class TechnicalDiagramDrawer {
         private val DRAW_AREA_H = CANVAS_HEIGHT - MARGIN_BOTTOM - MARGIN_TOP
     }
 
-    fun createDiagram(item: BudgetItemEntity, pdfDocument: PdfDocument): Image? {
+    fun createDiagram(
+        item: BudgetItemEntity,
+        pdfDocument: PdfDocument,
+        logoImageData: com.itextpdf.io.image.ImageData? = null
+    ): Image? {
         if (item.widthMm <= 0 || item.heightMm <= 0) return null
         if (item.type !in listOf("WINDOW", "DOOR", "RAILING")) return null
 
         val xObject = PdfFormXObject(Rectangle(CANVAS_WIDTH, CANVAS_HEIGHT))
         val canvas = PdfCanvas(xObject, pdfDocument)
         val font = PdfFontFactory.createFont(StandardFonts.HELVETICA)
+
+        if (logoImageData != null) {
+            try {
+                val logoW = CANVAS_WIDTH * 0.65f
+                val logoH = logoImageData.height.toFloat() * (logoW / logoImageData.width.toFloat())
+                val lx = (CANVAS_WIDTH - logoW) / 2f
+                val ly = (CANVAS_HEIGHT - logoH) / 2f
+                val gs = com.itextpdf.kernel.pdf.extgstate.PdfExtGState()
+                    .setFillOpacity(0.08f).setStrokeOpacity(0.08f)
+                canvas.saveState()
+                canvas.setExtGState(gs)
+                canvas.addImageFittedIntoRectangle(
+                    logoImageData,
+                    com.itextpdf.kernel.geom.Rectangle(lx, ly, logoW, logoH),
+                    false
+                )
+                canvas.restoreState()
+            } catch (_: Exception) { }
+        }
 
         val scale = min(DRAW_AREA_W / item.widthMm, DRAW_AREA_H / item.heightMm)
         val drawW = item.widthMm * scale
@@ -40,7 +63,7 @@ class TechnicalDiagramDrawer {
         val originY = MARGIN_BOTTOM + (DRAW_AREA_H - drawH) / 2f
 
         when (item.type) {
-            "WINDOW" -> drawWindow(canvas, originX, originY, drawW, drawH, item.panelCount.coerceAtLeast(1))
+            "WINDOW" -> drawWindow(canvas, originX, originY, drawW, drawH, item.panelCount.coerceAtLeast(1), item.panelTypes)
             "DOOR"   -> drawDoor(canvas, originX, originY, drawW, drawH, item.panelCount.coerceAtLeast(1))
             "RAILING" -> drawRailing(canvas, originX, originY, drawW, drawH)
         }
@@ -53,8 +76,12 @@ class TechnicalDiagramDrawer {
 
     // ── WINDOW ────────────────────────────────────────────────────────────────
 
-    private fun drawWindow(canvas: PdfCanvas, x: Float, y: Float, w: Float, h: Float, panels: Int) {
+    private fun drawWindow(
+        canvas: PdfCanvas, x: Float, y: Float, w: Float, h: Float,
+        panels: Int, panelTypes: String = ""
+    ) {
         val inset = 3f
+        val typeList = panelTypes.split(",")
 
         // Outer frame
         canvas.setLineWidth(2f)
@@ -79,14 +106,31 @@ class TechnicalDiagramDrawer {
             canvas.stroke()
         }
 
-        // Sliding arrows — alternating directions per panel
+        // Per-panel indicator: F = cross (✕), M = sliding arrow
         canvas.setLineWidth(0.5f)
         for (i in 0 until panels) {
-            val panelCenterX = x + panelW * i + panelW / 2f
-            val arrowY = y + h / 2f
-            val dir = if (i % 2 == 0) 1f else -1f
-            drawSlidingArrow(canvas, panelCenterX, arrowY, panelW * 0.3f, dir)
+            val px = x + panelW * i
+            val isFijo = typeList.getOrElse(i) { "M" } == "F"
+            if (isFijo) {
+                drawFixedCross(canvas, px + inset, y + inset, panelW - inset * 2, h - inset * 2)
+            } else {
+                val panelCenterX = px + panelW / 2f
+                val arrowY = y + h / 2f
+                val dir = if (i % 2 == 0) 1f else -1f
+                drawSlidingArrow(canvas, panelCenterX, arrowY, panelW * 0.3f, dir)
+            }
         }
+    }
+
+    private fun drawFixedCross(canvas: PdfCanvas, x: Float, y: Float, w: Float, h: Float) {
+        val margin = minOf(w, h) * 0.15f
+        canvas.setLineWidth(0.6f)
+        canvas.moveTo((x + margin).toDouble(), (y + margin).toDouble())
+        canvas.lineTo((x + w - margin).toDouble(), (y + h - margin).toDouble())
+        canvas.stroke()
+        canvas.moveTo((x + w - margin).toDouble(), (y + margin).toDouble())
+        canvas.lineTo((x + margin).toDouble(), (y + h - margin).toDouble())
+        canvas.stroke()
     }
 
     private fun drawSlidingArrow(canvas: PdfCanvas, cx: Float, cy: Float, half: Float, dir: Float) {
@@ -161,29 +205,41 @@ class TechnicalDiagramDrawer {
     // ── RAILING ───────────────────────────────────────────────────────────────
 
     private fun drawRailing(canvas: PdfCanvas, x: Float, y: Float, w: Float, h: Float) {
-        // Outer frame
-        canvas.setLineWidth(2f)
-        canvas.rectangle(x.toDouble(), y.toDouble(), w.toDouble(), h.toDouble())
-        canvas.stroke()
+        val postW  = (w * 0.05f).coerceAtLeast(4f).coerceAtMost(9f)
+        val railH  = (h * 0.14f).coerceAtLeast(5f).coerceAtMost(11f)
+        val balW   = 2.5f
+        val gray   = com.itextpdf.kernel.colors.DeviceGray(0.22f)
 
-        canvas.setLineWidth(0.8f)
-
-        // Top and bottom rails already drawn by frame; add a mid rail
-        val midY = y + h / 2f
-        canvas.moveTo((x + 2).toDouble(), midY.toDouble())
-        canvas.lineTo((x + w - 2).toDouble(), midY.toDouble())
-        canvas.stroke()
-
-        // Vertical balusters
-        val balusterSpacingPt = 12f
-        val count = (w / balusterSpacingPt).toInt().coerceAtLeast(2)
         canvas.setLineWidth(0.5f)
-        for (i in 1 until count) {
-            val bx = x + w * i / count
-            canvas.moveTo(bx.toDouble(), (y + 2).toDouble())
-            canvas.lineTo(bx.toDouble(), (y + h - 2).toDouble())
+        canvas.setFillColor(gray)
+
+        // Left post
+        canvas.rectangle(x.toDouble(), y.toDouble(), postW.toDouble(), h.toDouble())
+        canvas.fillStroke()
+        // Right post
+        canvas.rectangle((x + w - postW).toDouble(), y.toDouble(), postW.toDouble(), h.toDouble())
+        canvas.fillStroke()
+        // Top handrail
+        canvas.rectangle(x.toDouble(), (y + h - railH).toDouble(), w.toDouble(), railH.toDouble())
+        canvas.fillStroke()
+
+        // Balusters — thin hollow rectangles evenly spaced between posts
+        val innerX = x + postW
+        val innerW = w - postW * 2f
+        val innerY = y
+        val innerH = h - railH
+        val count  = (innerW / 10f).toInt().coerceAtLeast(1)
+
+        canvas.setFillColor(com.itextpdf.kernel.colors.DeviceGray(0f))
+        canvas.setLineWidth(0.4f)
+        for (i in 1..count) {
+            val bx = innerX + innerW * i.toFloat() / (count + 1).toFloat() - balW / 2f
+            canvas.rectangle(bx.toDouble(), innerY.toDouble(), balW.toDouble(), innerH.toDouble())
             canvas.stroke()
         }
+
+        // Reset fill to black
+        canvas.setFillColor(com.itextpdf.kernel.colors.DeviceGray(0f))
     }
 
     // ── DIMENSION LINES ───────────────────────────────────────────────────────
