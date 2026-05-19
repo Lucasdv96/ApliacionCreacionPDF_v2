@@ -23,13 +23,36 @@ class TechnicalDiagramDrawer {
         private val DRAW_AREA_H = CANVAS_HEIGHT - MARGIN_BOTTOM - MARGIN_TOP
     }
 
-    fun createDiagram(item: BudgetItemEntity, pdfDocument: PdfDocument): Image? {
+    fun createDiagram(
+        item: BudgetItemEntity,
+        pdfDocument: PdfDocument,
+        logoImageData: com.itextpdf.io.image.ImageData? = null
+    ): Image? {
         if (item.widthMm <= 0 || item.heightMm <= 0) return null
         if (item.type !in listOf("WINDOW", "DOOR", "RAILING")) return null
 
         val xObject = PdfFormXObject(Rectangle(CANVAS_WIDTH, CANVAS_HEIGHT))
         val canvas = PdfCanvas(xObject, pdfDocument)
         val font = PdfFontFactory.createFont(StandardFonts.HELVETICA)
+
+        if (logoImageData != null) {
+            try {
+                val logoW = CANVAS_WIDTH * 0.65f
+                val logoH = logoImageData.height.toFloat() * (logoW / logoImageData.width.toFloat())
+                val lx = (CANVAS_WIDTH - logoW) / 2f
+                val ly = (CANVAS_HEIGHT - logoH) / 2f
+                val gs = com.itextpdf.kernel.pdf.extgstate.PdfExtGState()
+                    .setFillOpacity(0.08f).setStrokeOpacity(0.08f)
+                canvas.saveState()
+                canvas.setExtGState(gs)
+                canvas.addImageFittedIntoRectangle(
+                    logoImageData,
+                    com.itextpdf.kernel.geom.Rectangle(lx, ly, logoW, logoH),
+                    false
+                )
+                canvas.restoreState()
+            } catch (_: Exception) { }
+        }
 
         val scale = min(DRAW_AREA_W / item.widthMm, DRAW_AREA_H / item.heightMm)
         val drawW = item.widthMm * scale

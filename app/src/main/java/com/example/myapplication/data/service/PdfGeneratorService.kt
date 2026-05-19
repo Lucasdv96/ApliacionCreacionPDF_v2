@@ -245,6 +245,14 @@ class PdfGeneratorService(private val context: Context) {
         pdfDocument: PdfDocument,
         items: List<BudgetItemEntity>
     ) {
+        val logoImageData: com.itextpdf.io.image.ImageData? = try {
+            val resId = context.resources.getIdentifier("logo_watermark", "raw", context.packageName)
+            if (resId != 0) {
+                val bytes = context.resources.openRawResource(resId).use { it.readBytes() }
+                ImageDataFactory.create(bytes)
+            } else null
+        } catch (_: Exception) { null }
+
         val headerColor = DeviceRgb(0x1a, 0x4f, 0x8a)
 
         document.add(
@@ -289,7 +297,7 @@ class PdfGeneratorService(private val context: Context) {
                 .setWidth(UnitValue.createPercentValue(100f))
 
             // Left cell: diagram
-            val diagram = diagramDrawer.createDiagram(item, pdfDocument)
+            val diagram = diagramDrawer.createDiagram(item, pdfDocument, logoImageData)
             val diagramCell = Cell().setBorder(SolidBorder(0.5f)).setPadding(6f)
             if (diagram != null) {
                 diagram.setMaxWidth(UnitValue.createPercentValue(100f))
