@@ -17,7 +17,6 @@ import com.example.myapplication.presentation.ui.screen.CreateBudgetScreen
 import com.example.myapplication.presentation.ui.screen.EditClientScreen
 import com.example.myapplication.presentation.ui.screen.HomeScreen
 import com.example.myapplication.presentation.ui.screen.SettingsScreen
-import com.example.myapplication.presentation.ui.screen.SplashScreen
 import com.example.myapplication.presentation.viewmodel.AddItemViewModel
 import com.example.myapplication.presentation.viewmodel.BudgetDetailViewModel
 import com.example.myapplication.presentation.viewmodel.BudgetListViewModel
@@ -27,7 +26,6 @@ import com.example.myapplication.presentation.viewmodel.EditClientViewModel
 import com.example.myapplication.presentation.viewmodel.SettingsViewModel
 
 sealed class Destination(val route: String) {
-    data object Splash : Destination("splash")
     data object Home : Destination("home")
     data object BudgetList : Destination("budget_list")
     data object CreateBudget : Destination("create_budget")
@@ -53,19 +51,12 @@ fun AppNavGraph(
     settingsRepository: com.example.myapplication.data.repository.SettingsRepository,
     pdfGeneratorService: com.example.myapplication.data.service.PdfGeneratorService,
     sharingService: com.example.myapplication.data.service.SharingService,
-    startDestination: String = Destination.Splash.route
+    startDestination: String = Destination.Home.route
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
-        composable(Destination.Splash.route) {
-            SplashScreen(onFinished = {
-                navController.navigate(Destination.Home.route) {
-                    popUpTo(Destination.Splash.route) { inclusive = true }
-                }
-            })
-        }
         composable(Destination.Home.route) {
             HomeScreen(
                 onNavigateToCreateBudget = { navController.navigate(Destination.CreateBudget.route) },
