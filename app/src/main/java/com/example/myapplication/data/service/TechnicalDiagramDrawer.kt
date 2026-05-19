@@ -205,29 +205,44 @@ class TechnicalDiagramDrawer {
     // ── RAILING ───────────────────────────────────────────────────────────────
 
     private fun drawRailing(canvas: PdfCanvas, x: Float, y: Float, w: Float, h: Float) {
-        // Outer frame
-        canvas.setLineWidth(2f)
-        canvas.rectangle(x.toDouble(), y.toDouble(), w.toDouble(), h.toDouble())
-        canvas.stroke()
+        val postW  = (w * 0.05f).coerceAtLeast(4f).coerceAtMost(9f)
+        val railH  = (h * 0.14f).coerceAtLeast(5f).coerceAtMost(11f)
+        val balW   = 2.5f
+        val gray   = com.itextpdf.kernel.colors.DeviceGray(0.22f)
 
-        canvas.setLineWidth(0.8f)
-
-        // Top and bottom rails already drawn by frame; add a mid rail
-        val midY = y + h / 2f
-        canvas.moveTo((x + 2).toDouble(), midY.toDouble())
-        canvas.lineTo((x + w - 2).toDouble(), midY.toDouble())
-        canvas.stroke()
-
-        // Vertical balusters
-        val balusterSpacingPt = 12f
-        val count = (w / balusterSpacingPt).toInt().coerceAtLeast(2)
         canvas.setLineWidth(0.5f)
-        for (i in 1 until count) {
-            val bx = x + w * i / count
-            canvas.moveTo(bx.toDouble(), (y + 2).toDouble())
-            canvas.lineTo(bx.toDouble(), (y + h - 2).toDouble())
+        canvas.setFillColor(gray)
+
+        // Left post
+        canvas.rectangle(x.toDouble(), y.toDouble(), postW.toDouble(), h.toDouble())
+        canvas.fillStroke()
+        // Right post
+        canvas.rectangle((x + w - postW).toDouble(), y.toDouble(), postW.toDouble(), h.toDouble())
+        canvas.fillStroke()
+        // Top handrail
+        canvas.rectangle(x.toDouble(), (y + h - railH).toDouble(), w.toDouble(), railH.toDouble())
+        canvas.fillStroke()
+        // Bottom rail
+        canvas.rectangle(x.toDouble(), y.toDouble(), w.toDouble(), railH.toDouble())
+        canvas.fillStroke()
+
+        // Balusters — thin hollow rectangles evenly spaced between posts
+        val innerX = x + postW
+        val innerW = w - postW * 2f
+        val innerY = y + railH
+        val innerH = h - railH * 2f
+        val count  = (innerW / 10f).toInt().coerceAtLeast(1)
+
+        canvas.setFillColor(com.itextpdf.kernel.colors.DeviceGray(0f))
+        canvas.setLineWidth(0.4f)
+        for (i in 1..count) {
+            val bx = innerX + innerW * i.toFloat() / (count + 1).toFloat() - balW / 2f
+            canvas.rectangle(bx.toDouble(), innerY.toDouble(), balW.toDouble(), innerH.toDouble())
             canvas.stroke()
         }
+
+        // Reset fill to black
+        canvas.setFillColor(com.itextpdf.kernel.colors.DeviceGray(0f))
     }
 
     // ── DIMENSION LINES ───────────────────────────────────────────────────────
